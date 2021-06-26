@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
-import 'package:tuple/tuple.dart';
 
 import '../models/documents/attribute.dart';
 import '../models/documents/document.dart';
@@ -43,12 +42,7 @@ class QuillController extends ChangeNotifier {
   /// removing or listeners to this instance.
   bool _isDisposed = false;
 
-  // item1: Document state before [change].
-  //
-  // item2: Change delta applied to the document.
-  //
-  // item3: The source of this change.
-  Stream<Tuple3<Delta, Delta, ChangeSource>> get changes => document.changes;
+  Stream<QuillChange> get changes => document.changes;
 
   TextEditingValue get plainTextEditingValue => TextEditingValue(
         text: document.toPlainText(),
@@ -93,6 +87,11 @@ class QuillController extends ChangeNotifier {
   bool get hasUndo => document.hasUndo;
 
   bool get hasRedo => document.hasRedo;
+
+  void clearText() {
+    final length = document.length - 1;
+    replaceText(0, length, '', const TextSelection.collapsed(offset: 0));
+  }
 
   void replaceText(
       int index, int len, Object? data, TextSelection? textSelection,

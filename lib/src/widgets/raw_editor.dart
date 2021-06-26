@@ -204,7 +204,8 @@ class RawEditorState extends EditorState
 
     _selectionOverlay?.handlesVisible = _shouldShowSelectionHandles();
 
-    if (!_keyboardVisible) {
+    //未选中时不弹出keyboard
+    if (selection.start != selection.end) {
       requestKeyboard();
     }
   }
@@ -627,22 +628,20 @@ class RawEditorState extends EditorState
         value.selection,
       );
     } else {
-      final value = textEditingValue;
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       if (data != null) {
-        final length =
-            textEditingValue.selection.end - textEditingValue.selection.start;
+        final currentSelection = textEditingValue.selection;
+        final length = currentSelection.end - currentSelection.start;
+
         widget.controller.replaceText(
-          value.selection.start,
-          length,
-          data.text,
-          value.selection,
-        );
+            currentSelection.start, length, data.text, currentSelection);
+
         // move cursor to the end of pasted text selection
         widget.controller.updateSelection(
-            TextSelection.collapsed(
-                offset: value.selection.start + data.text!.length),
-            ChangeSource.LOCAL);
+          TextSelection.collapsed(
+              offset: value.selection.start + data.text!.length),
+          ChangeSource.LOCAL,
+        );
       }
     }
   }

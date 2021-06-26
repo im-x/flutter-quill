@@ -17,6 +17,7 @@ import '../models/documents/nodes/container.dart' as container_node;
 import '../models/documents/nodes/embed.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/line.dart';
+import '../utils/quill_data.dart';
 import 'box.dart';
 import 'controller.dart';
 import 'cursor.dart';
@@ -136,11 +137,8 @@ class QuillEditor extends StatefulWidget {
       this.keyboardAppearance = Brightness.light,
       this.scrollPhysics,
       this.onLaunchUrl,
-      this.onTapDown,
       this.onTapUp,
-      this.onSingleLongTapStart,
-      this.onSingleLongTapMoveUpdate,
-      this.onSingleLongTapEnd,
+      this.onLongPress,
       this.embedBuilder = _defaultEmbedBuilder});
 
   factory QuillEditor.basic({
@@ -156,6 +154,50 @@ class QuillEditor extends StatefulWidget {
         readOnly: readOnly,
         expands: false,
         padding: EdgeInsets.zero);
+  }
+
+  factory QuillEditor.input({
+    required QuillController controller,
+    required FocusNode focusNode,
+    bool? expand,
+  }) {
+    return QuillEditor(
+      controller: controller,
+      expands: expand ?? false,
+      readOnly: false,
+      autoFocus: false,
+      scrollable: true,
+      focusNode: focusNode,
+      padding: EdgeInsets.zero,
+      scrollController: ScrollController(),
+      minHeight: expand == true ? null : QuillData.cursorHeight * 1,
+      maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
+    );
+  }
+
+  factory QuillEditor.readonlyHtml({
+    required String html,
+    GestureTapCallback? onTapUp,
+    GestureLongPressCallback? onLongPress,
+  }) {
+    final controller = QuillController(
+      document: Document.fromHtml(html),
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
+    return QuillEditor(
+      controller: controller,
+      expands: false,
+      readOnly: true,
+      autoFocus: false,
+      scrollable: false,
+      focusNode: FocusNode(),
+      padding: EdgeInsets.zero,
+      enableInteractiveSelection: false,
+      scrollController: ScrollController(),
+      onTapUp: onTapUp,
+      onLongPress: onLongPress,
+    );
   }
 
   final QuillController controller;
@@ -178,27 +220,8 @@ class QuillEditor extends StatefulWidget {
   final Brightness keyboardAppearance;
   final ScrollPhysics? scrollPhysics;
   final ValueChanged<String>? onLaunchUrl;
-  // Returns whether gesture is handled
-  final bool Function(
-      TapDownDetails details, TextPosition Function(Offset offset))? onTapDown;
-
-  // Returns whether gesture is handled
-  final bool Function(
-      TapUpDetails details, TextPosition Function(Offset offset))? onTapUp;
-
-  // Returns whether gesture is handled
-  final bool Function(
-          LongPressStartDetails details, TextPosition Function(Offset offset))?
-      onSingleLongTapStart;
-
-  // Returns whether gesture is handled
-  final bool Function(LongPressMoveUpdateDetails details,
-      TextPosition Function(Offset offset))? onSingleLongTapMoveUpdate;
-  // Returns whether gesture is handled
-  final bool Function(
-          LongPressEndDetails details, TextPosition Function(Offset offset))?
-      onSingleLongTapEnd;
-
+  final GestureTapCallback? onTapUp;
+  final GestureLongPressCallback? onLongPress;
   final EmbedBuilder embedBuilder;
 
   @override
@@ -237,8 +260,8 @@ class _QuillEditorState extends State<QuillEditor>
       case TargetPlatform.linux:
       case TargetPlatform.windows:
         textSelectionControls = materialTextSelectionControls;
-        paintCursorAboveText = false;
-        cursorOpacityAnimates = false;
+        paintCursorAboveText = true;
+        cursorOpacityAnimates = true;
         cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
         selectionColor = selectionTheme.selectionColor ??
             theme.colorScheme.primary.withOpacity(0.40);
@@ -261,49 +284,58 @@ class _QuillEditorState extends State<QuillEditor>
         throw UnimplementedError();
     }
 
+    final options = ToolbarOptions(
+      copy: widget.enableInteractiveSelection,
+      cut: widget.enableInteractiveSelection,
+      paste: widget.enableInteractiveSelection,
+      selectAll: widget.enableInteractiveSelection,
+    );
+
+    final cursorStyle = CursorStyle(
+      color: cursorColor,
+      backgroundColor: Colors.grey,
+      width: QuillData.cursorWidth,
+      height: QuillData.cursorHeight,
+      radius: cursorRadius,
+      offset: cursorOffset,
+      paintAboveText: widget.paintCursorAboveText ?? paintCursorAboveText,
+      opacityAnimates: cursorOpacityAnimates,
+    );
+
+    final isMobile = theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.android;
+
+    final editor = RawEditor(
+        _editorKey,
+        widget.controller,
+        widget.focusNode,
+        widget.scrollController,
+        widget.scrollable,
+        widget.scrollBottomInset,
+        widget.padding,
+        widget.readOnly,
+        widget.placeholder,
+        widget.onLaunchUrl,
+        options,
+        isMobile,
+        widget.showCursor,
+        cursorStyle,
+        widget.textCapitalization,
+        widget.maxHeight,
+        widget.minHeight,
+        widget.customStyles,
+        widget.expands,
+        widget.autoFocus,
+        selectionColor,
+        textSelectionControls,
+        widget.keyboardAppearance,
+        widget.enableInteractiveSelection,
+        widget.scrollPhysics,
+        widget.embedBuilder);
+
     return _selectionGestureDetectorBuilder.build(
       HitTestBehavior.translucent,
-      RawEditor(
-          _editorKey,
-          widget.controller,
-          widget.focusNode,
-          widget.scrollController,
-          widget.scrollable,
-          widget.scrollBottomInset,
-          widget.padding,
-          widget.readOnly,
-          widget.placeholder,
-          widget.onLaunchUrl,
-          ToolbarOptions(
-            copy: widget.enableInteractiveSelection,
-            cut: widget.enableInteractiveSelection,
-            paste: widget.enableInteractiveSelection,
-            selectAll: widget.enableInteractiveSelection,
-          ),
-          theme.platform == TargetPlatform.iOS ||
-              theme.platform == TargetPlatform.android,
-          widget.showCursor,
-          CursorStyle(
-            color: cursorColor,
-            backgroundColor: Colors.grey,
-            width: 2,
-            radius: cursorRadius,
-            offset: cursorOffset,
-            paintAboveText: widget.paintCursorAboveText ?? paintCursorAboveText,
-            opacityAnimates: cursorOpacityAnimates,
-          ),
-          widget.textCapitalization,
-          widget.maxHeight,
-          widget.minHeight,
-          widget.customStyles,
-          widget.expands,
-          widget.autoFocus,
-          selectionColor,
-          textSelectionControls,
-          widget.keyboardAppearance,
-          widget.enableInteractiveSelection,
-          widget.scrollPhysics,
-          widget.embedBuilder),
+      editor,
     );
   }
 
@@ -346,15 +378,6 @@ class _QuillEditorSelectionGestureDetectorBuilder
 
   @override
   void onSingleLongTapMoveUpdate(LongPressMoveUpdateDetails details) {
-    if (_state.widget.onSingleLongTapMoveUpdate != null) {
-      final renderEditor = getRenderEditor();
-      if (renderEditor != null) {
-        if (_state.widget.onSingleLongTapMoveUpdate!(
-            details, renderEditor.getPositionForOffset)) {
-          return;
-        }
-      }
-    }
     if (!delegate.getSelectionEnabled()) {
       return;
     }
@@ -393,7 +416,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
       return false;
     }
     final line = result.node as Line;
-    final segmentResult = line.queryChild(result.offset, false);
+    final segmentResult = line.queryChild(result.offset, true);
     if (segmentResult.node == null) {
       if (line.length == 1) {
         getEditor()!.widget.controller.updateSelection(
@@ -402,42 +425,55 @@ class _QuillEditorSelectionGestureDetectorBuilder
       }
       return false;
     }
+
     final segment = segmentResult.node as leaf.Leaf;
     if (segment.style.containsKey(Attribute.link.key)) {
-      var launchUrl = getEditor()!.widget.onLaunchUrl;
-      launchUrl ??= _launchUrl;
-      String? link = segment.style.attributes[Attribute.link.key]!.value;
-      if (getEditor()!.widget.readOnly && link != null) {
-        link = link.trim();
-        if (!linkPrefixes
-            .any((linkPrefix) => link!.toLowerCase().startsWith(linkPrefix))) {
-          link = 'https://$link';
-        }
-        launchUrl(link);
-      }
-      return false;
+      _linkTap(segment);
+    } else if (getEditor()!.widget.readOnly && segment.value is Embeddable) {
+      _embedTap(segment.value as Embeddable);
     }
-    if (getEditor()!.widget.readOnly && segment.value is BlockEmbed) {
-      final blockEmbed = segment.value as BlockEmbed;
-      if (blockEmbed.type == 'image') {
-        final imageUrl = _standardizeImageUrl(blockEmbed.data);
-        Navigator.push(
-          getEditor()!.context,
-          MaterialPageRoute(
-            builder: (context) => ImageTapWrapper(
-              imageProvider: imageUrl.startsWith('http')
-                  ? NetworkImage(imageUrl)
-                  : isBase64(imageUrl)
-                      ? Image.memory(base64.decode(imageUrl))
-                          as ImageProvider<Object>?
-                      : FileImage(io.File(imageUrl)),
-            ),
-          ),
-        );
-      }
-    }
-
     return false;
+  }
+
+  void _linkTap(leaf.Leaf leaf) {
+    var launchUrl = getEditor()!.widget.onLaunchUrl;
+    launchUrl ??= _launchUrl;
+    String? link = leaf.style.attributes[Attribute.link.key]!.value;
+    if (getEditor()!.widget.readOnly && link != null) {
+      link = link.trim();
+      final lower = link.toLowerCase();
+      if (!linkPrefixes.any(lower.startsWith)) {
+        link = 'https://$link';
+      }
+      launchUrl(link);
+    }
+  }
+
+  void _embedTap(Embeddable embed) {
+    if (embed is InlineEmbed) {
+      embed.onTap();
+    } else {
+      final blockEmbed = embed as BlockEmbed;
+      if (blockEmbed.type == 'image') {
+        _imageTap(blockEmbed);
+      }
+    }
+  }
+
+  void _imageTap(BlockEmbed blockEmbed) {
+    final imageUrl = _standardizeImageUrl(blockEmbed.data);
+    final image = imageUrl.startsWith('http')
+        ? NetworkImage(imageUrl)
+        : isBase64(imageUrl)
+            ? Image.memory(base64.decode(imageUrl)) as ImageProvider<Object>?
+            : FileImage(io.File(imageUrl));
+
+    Navigator.push(
+      getEditor()!.context,
+      MaterialPageRoute(
+        builder: (context) => ImageTapWrapper(imageProvider: image),
+      ),
+    );
   }
 
   Future<void> _launchUrl(String url) async {
@@ -445,34 +481,16 @@ class _QuillEditorSelectionGestureDetectorBuilder
   }
 
   @override
-  void onTapDown(TapDownDetails details) {
-    if (_state.widget.onTapDown != null) {
-      final renderEditor = getRenderEditor();
-      if (renderEditor != null) {
-        if (_state.widget.onTapDown!(
-            details, renderEditor.getPositionForOffset)) {
-          return;
-        }
-      }
-    }
-    super.onTapDown(details);
-  }
-
-  @override
   void onSingleTapUp(TapUpDetails details) {
-    if (_state.widget.onTapUp != null) {
-      final renderEditor = getRenderEditor();
-      if (renderEditor != null) {
-        if (_state.widget.onTapUp!(
-            details, renderEditor.getPositionForOffset)) {
-          return;
-        }
-      }
-    }
-
     getEditor()!.hideToolbar();
 
     final positionSelected = _onTapping(details);
+    if (getEditor()!.widget.readOnly) {
+      if (!positionSelected) {
+        _state.widget.onTapUp?.call();
+      }
+      return;
+    }
 
     if (delegate.getSelectionEnabled() && !positionSelected) {
       switch (Theme.of(_state.context).platform) {
@@ -503,14 +521,9 @@ class _QuillEditorSelectionGestureDetectorBuilder
 
   @override
   void onSingleLongTapStart(LongPressStartDetails details) {
-    if (_state.widget.onSingleLongTapStart != null) {
-      final renderEditor = getRenderEditor();
-      if (renderEditor != null) {
-        if (_state.widget.onSingleLongTapStart!(
-            details, renderEditor.getPositionForOffset)) {
-          return;
-        }
-      }
+    if (getEditor()!.widget.readOnly) {
+      _state.widget.onLongPress?.call();
+      return;
     }
 
     if (delegate.getSelectionEnabled()) {
@@ -534,20 +547,6 @@ class _QuillEditorSelectionGestureDetectorBuilder
           throw 'Invalid platform';
       }
     }
-  }
-
-  @override
-  void onSingleLongTapEnd(LongPressEndDetails details) {
-    if (_state.widget.onSingleLongTapEnd != null) {
-      final renderEditor = getRenderEditor();
-      if (renderEditor != null) {
-        if (_state.widget.onSingleLongTapEnd!(
-            details, renderEditor.getPositionForOffset)) {
-          return;
-        }
-      }
-    }
-    super.onSingleLongTapEnd(details);
   }
 }
 
@@ -903,24 +902,26 @@ class RenderEditor extends RenderEditableContainerBox
   double? getOffsetToRevealCursor(
       double viewportHeight, double scrollOffset, double offsetInViewport) {
     final endpoints = getEndpointsForSelection(selection);
-    final endpoint = endpoints.first;
-    final child = childAtPosition(selection.extent);
-    const kMargin = 8.0;
+    if (endpoints.length != 1) {
+      return null;
+    }
 
-    final caretTop = endpoint.point.dy -
-        child.preferredLineHeight(TextPosition(
-            offset: selection.extentOffset - child.getContainer().offset)) -
-        kMargin +
-        offsetInViewport +
-        scrollBottomInset;
-    final caretBottom =
-        endpoint.point.dy + kMargin + offsetInViewport + scrollBottomInset;
+    final child = childAtPosition(selection.extent);
+    final childHeight = child.preferredLineHeight(TextPosition(
+      offset: selection.extentOffset - child.getContainer().offset,
+    ));
+
     double? dy;
+    final endpoint = endpoints.single.point;
+    final caretTop = endpoint.dy - childHeight - offsetInViewport;
+    final caretBottom = endpoint.dy + offsetInViewport;
+
     if (caretTop < scrollOffset) {
       dy = caretTop;
     } else if (caretBottom > scrollOffset + viewportHeight) {
       dy = caretBottom - viewportHeight;
     }
+
     if (dy == null) {
       return null;
     }

@@ -41,10 +41,12 @@ const double kDefaultIconSize = 18;
 // The factor of how much larger the button is in relation to the icon.
 const double kIconButtonFactor = 1.77;
 
+const double kToolbarHeight = 48;
+
 class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
   const QuillToolbar({
     required this.children,
-    this.toolBarHeight = 36,
+    this.toolBarHeight = kToolbarHeight,
     this.color,
     this.filePickImpl,
     Key? key,
@@ -92,7 +94,6 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
 
     return QuillToolbar(
       key: key,
-      toolBarHeight: toolbarIconSize * 2,
       children: [
         if (showHistory)
           HistoryButton(
@@ -271,6 +272,90 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             icon: Icons.horizontal_rule,
             iconSize: toolbarIconSize,
           ),
+      ],
+    );
+  }
+
+  factory QuillToolbar.input(
+      {required QuillController controller,
+      Key? key,
+      bool showBoldButton = true,
+      bool showItalicButton = true,
+      bool showStrikeThrough = true,
+      bool showClearFormat = true,
+      bool showListNumbers = true,
+      bool showListBullets = true,
+      bool showLink = true,
+      Widget? externalPre}) {
+    return QuillToolbar(
+      key: key,
+      children: [
+        if (externalPre != null) externalPre,
+        if (externalPre != null)
+          VerticalDivider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey.shade400,
+          ),
+        Visibility(
+          visible: showBoldButton,
+          child: ToggleStyleButton(
+            attribute: Attribute.bold,
+            icon: Icons.format_bold,
+            controller: controller,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showItalicButton,
+          child: ToggleStyleButton(
+            attribute: Attribute.italic,
+            icon: Icons.format_italic,
+            controller: controller,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showStrikeThrough,
+          child: ToggleStyleButton(
+            attribute: Attribute.strikeThrough,
+            icon: Icons.format_strikethrough,
+            controller: controller,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showClearFormat,
+          child: ClearFormatButton(
+            icon: Icons.format_clear,
+            controller: controller,
+          ),
+        ),
+        VerticalDivider(
+          indent: 16,
+          endIndent: 16,
+          color: Colors.grey.shade400,
+        ),
+        Visibility(
+          visible: showListNumbers,
+          child: ToggleStyleButton(
+            attribute: Attribute.ol,
+            controller: controller,
+            icon: Icons.format_list_numbered,
+          ),
+        ),
+        Visibility(
+          visible: showListBullets,
+          child: ToggleStyleButton(
+            attribute: Attribute.ul,
+            controller: controller,
+            icon: Icons.format_list_bulleted,
+          ),
+        ),
+        Visibility(
+          visible: showLink,
+          child: LinkStyleButton(controller: controller),
+        ),
       ],
     );
   }

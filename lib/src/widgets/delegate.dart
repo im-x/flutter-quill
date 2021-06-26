@@ -127,11 +127,11 @@ class EditorTextSelectionGestureDetectorBuilder {
   void onDragSelectionEnd(DragEndDetails details) {}
 
   Widget build(HitTestBehavior behavior, Widget child) {
+    final forcePressEnabled = delegate.getForcePressEnabled();
     return EditorTextSelectionGestureDetector(
       onTapDown: onTapDown,
-      onForcePressStart:
-          delegate.getForcePressEnabled() ? onForcePressStart : null,
-      onForcePressEnd: delegate.getForcePressEnabled() ? onForcePressEnd : null,
+      onForcePressStart: forcePressEnabled ? onForcePressStart : null,
+      onForcePressEnd: forcePressEnabled ? onForcePressEnd : null,
       onSingleTapUp: onSingleTapUp,
       onSingleTapCancel: onSingleTapCancel,
       onSingleLongTapStart: onSingleLongTapStart,

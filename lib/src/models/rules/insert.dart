@@ -321,21 +321,24 @@ class AutoFormatLinksRule extends InsertRule {
     }
 
     try {
-      final cand = (prev.data as String).split('\n').last.split(' ').last;
-      final link = Uri.parse(cand);
-      if (!['https', 'http'].contains(link.scheme)) {
+      final url = (prev.data as String).split('\n').last.split(' ').last;
+      final regex = RegExp(
+          r'([hH][tT]{2}[pP]://|[hH][tT]{2}[pP][sS]://|[wW]{3}.|[wW][aA][pP].|[fF][tT][pP].|[fF][iI][lL][eE].)[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]');
+
+      final matches = regex.allMatches(url);
+      if (matches.isEmpty) {
         return null;
       }
-      final attributes = prev.attributes ?? <String, dynamic>{};
 
+      final attributes = prev.attributes ?? <String, dynamic>{};
       if (attributes.containsKey(Attribute.link.key)) {
         return null;
       }
 
-      attributes.addAll(LinkAttribute(link.toString()).toJson());
+      attributes.addAll(LinkAttribute(url).toJson());
       return Delta()
-        ..retain(index + (len ?? 0) - cand.length)
-        ..retain(cand.length, attributes)
+        ..retain(index - url.length)
+        ..retain(url.length, attributes)
         ..insert(data, prev.attributes);
     } on FormatException {
       return null;
@@ -361,8 +364,8 @@ class PreserveInlineStylesRule extends InsertRule {
       return null;
     }
 
-    final attributes = prev.attributes;
     final text = data;
+    final attributes = prev.attributes;
     if (attributes == null || !attributes.containsKey(Attribute.link.key)) {
       return Delta()
         ..retain(index + (len ?? 0))

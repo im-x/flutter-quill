@@ -1,3 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import '../../../utils/quill_data.dart';
+
 /// An object which can be embedded into a Quill document.
 ///
 /// See also:
@@ -13,15 +18,18 @@ class Embeddable {
   final dynamic data;
 
   Map<String, dynamic> toJson() {
-    final m = <String, String>{type: data};
-    return m;
+    return {'type': runtimeType.toString(), type: data};
   }
 
   static Embeddable fromJson(Map<String, dynamic> json) {
-    final m = Map<String, dynamic>.from(json);
-    assert(m.length == 1, 'Embeddable map has one key');
+    assert(json.length == 2, 'Embeddable map need two key');
 
-    return BlockEmbed(m.keys.first, m.values.first);
+    if (json['type'] == 'BlockEmbed') {
+      return BlockEmbed(json.keys.last, json.values.last);
+    } else if (json['type'] == 'InlineEmbed') {
+      return InlineEmbed(json.keys.last, json.values.last);
+    }
+    throw ArgumentError('Not Support Argument ${json.toString()}');
   }
 }
 
@@ -39,4 +47,26 @@ class BlockEmbed extends Embeddable {
 
   static const String imageType = 'image';
   static BlockEmbed image(String imageUrl) => BlockEmbed(imageType, imageUrl);
+}
+
+class InlineEmbed extends Embeddable {
+  InlineEmbed(String type, Object data) : super(type, data);
+
+  static const emojiName = 'emoji';
+  static InlineEmbed emoji(String name) => InlineEmbed(emojiName, name);
+
+  static const mentionName = 'mention';
+  static InlineEmbed mention(Map<int, String> info) =>
+      InlineEmbed(mentionName, info);
+
+  Widget getEmbedWidget() {
+    final widget =
+        QuillData.getInlineEmbedWidget?.call(type) ?? const SizedBox.shrink();
+    return widget;
+  }
+
+  bool onTap() {
+    final handled = QuillData.onInlineEmbedTap?.call(type) == true;
+    return handled;
+  }
 }

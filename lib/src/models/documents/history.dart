@@ -32,12 +32,12 @@ class History {
   ///record delay
   final int interval;
 
-  void handleDocChange(Tuple3<Delta, Delta, ChangeSource> change) {
+  void handleDocChange(QuillChange change) {
     if (ignoreChange) return;
-    if (!userOnly || change.item3 == ChangeSource.LOCAL) {
-      record(change.item2, change.item1);
+    if (!userOnly || change.source == ChangeSource.LOCAL) {
+      record(change.change, change.before);
     } else {
-      transform(change.item2);
+      transform(change.change);
     }
   }
 

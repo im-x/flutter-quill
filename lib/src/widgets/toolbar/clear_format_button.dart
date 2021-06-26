@@ -13,7 +13,6 @@ class ClearFormatButton extends StatefulWidget {
 
   final IconData icon;
   final double iconSize;
-
   final QuillController controller;
 
   @override
@@ -27,14 +26,14 @@ class _ClearFormatButtonState extends State<ClearFormatButton> {
     final iconColor = theme.iconTheme.color;
     final fillColor = theme.canvasColor;
     return QuillIconButton(
-        highlightElevation: 0,
         hoverElevation: 0,
+        highlightElevation: 0,
         size: widget.iconSize * kIconButtonFactor,
         icon: Icon(widget.icon, size: widget.iconSize, color: iconColor),
         fillColor: fillColor,
         onPressed: () {
-          for (final k
-              in widget.controller.getSelectionStyle().attributes.values) {
+          final attrs = widget.controller.getSelectionStyle().attributes;
+          for (final k in attrs.values) {
             widget.controller.formatSelection(Attribute.clone(k, null));
           }
         });

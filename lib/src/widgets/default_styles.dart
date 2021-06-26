@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tuple/tuple.dart';
 
+import '../utils/quill_data.dart';
+
 class QuillStyles extends InheritedWidget {
   const QuillStyles({
     required this.data,
@@ -92,10 +94,11 @@ class DefaultStyles {
     final themeData = Theme.of(context);
     final defaultTextStyle = DefaultTextStyle.of(context);
     final baseStyle = defaultTextStyle.style.copyWith(
-      fontSize: 16,
-      height: 1.3,
+      fontSize: QuillData.chatFontStyle.fontSize,
+      height: QuillData.chatFontSizeScale,
     );
-    const baseSpacing = Tuple2<double, double>(6, 0);
+
+    const baseSpacing = Tuple2<double, double>(0, 0);
     String fontFamily;
     switch (themeData.platform) {
       case TargetPlatform.iOS:

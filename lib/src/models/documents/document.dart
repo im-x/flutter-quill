@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:tuple/tuple.dart';
 
+import '../../converters/delta_html_codec.dart';
 import '../quill_delta.dart';
 import '../rules/rule.dart';
 import 'attribute.dart';
@@ -19,12 +21,25 @@ class Document {
     _loadDocument(_delta);
   }
 
-  Document.fromJson(List data) : _delta = _transform(Delta.fromJson(data)) {
+  Document.fromDelta(Delta delta) : _delta = delta {
+    _loadDocument(delta);
+  }
+
+  Document.fromJson(String json)
+      : _delta = _transform(Delta.fromJson(jsonDecode(json))) {
     _loadDocument(_delta);
   }
 
-  Document.fromDelta(Delta delta) : _delta = delta {
-    _loadDocument(delta);
+  Document.fromHtml(String html) : _delta = _transform(htmlDecode(html)) {
+    _loadDocument(_delta);
+  }
+
+  String toJson() {
+    return jsonEncode(_delta.toJson());
+  }
+
+  String toHtml() {
+    return htmlEncode(_delta);
   }
 
   /// The root node of the document tree
@@ -44,12 +59,10 @@ class Document {
     _rules.setCustomRules(customRules);
   }
 
-  final StreamController<Tuple3<Delta, Delta, ChangeSource>> _observer =
-      StreamController.broadcast();
-
   final History _history = History();
 
-  Stream<Tuple3<Delta, Delta, ChangeSource>> get changes => _observer.stream;
+  final StreamController<QuillChange> _observer = StreamController.broadcast();
+  Stream<QuillChange> get changes => _observer.stream;
 
   Delta insert(int index, Object? data,
       {int replaceLength = 0, bool autoAppendNewlineAfterImage = true}) {
@@ -168,7 +181,8 @@ class Document {
     if (_delta != _root.toDelta()) {
       throw 'Compose failed';
     }
-    final change = Tuple3(originalDelta, delta, changeSource);
+
+    final change = QuillChange(originalDelta, delta, changeSource);
     _observer.add(change);
     _history.handleDocChange(change);
   }
@@ -201,22 +215,27 @@ class Document {
 
   static void _autoAppendNewlineAfterImage(
       int i, List<Operation> ops, Operation op, Delta res) {
-    final nextOpIsImage =
-        i + 1 < ops.length && ops[i + 1].isInsert && ops[i + 1].data is! String;
-    if (nextOpIsImage &&
-        op.data is String &&
-        (op.data as String).isNotEmpty &&
-        !(op.data as String).endsWith('\n')) {
+    final nextOp = i + 1 < ops.length ? ops[i + 1] : null;
+
+    final nextIsInsert = nextOp?.isInsert ?? false;
+    final nextIsImage = nextOp?.data is Map &&
+        (nextOp?.data as Map).containsKey(BlockEmbed.imageType);
+
+    final opIsLineBreak =
+        op.data is String && (op.data as String).endsWith('\n');
+    final nextOpIsImage = nextIsInsert && nextIsImage;
+    if (nextOpIsImage && !opIsLineBreak) {
       res.push(Operation.insert('\n'));
     }
-    // Currently embed is equivalent to image and hence `is! String`
-    final opInsertImage = op.isInsert && op.data is! String;
-    final nextOpIsLineBreak = i + 1 < ops.length &&
-        ops[i + 1].isInsert &&
-        ops[i + 1].data is String &&
-        (ops[i + 1].data as String).startsWith('\n');
+
+    final opIsImage =
+        op.data is Map && (op.data as Map).containsKey(BlockEmbed.imageType);
+    final nextIsLineBreak =
+        nextOp?.data is String && (nextOp?.data as String).startsWith('\n');
+
+    final opInsertImage = op.isInsert && opIsImage;
+    final nextOpIsLineBreak = nextIsInsert && nextIsLineBreak;
     if (opInsertImage && (i + 1 == ops.length - 1 || !nextOpIsLineBreak)) {
-      // automatically append '\n' for image
       res.push(Operation.insert('\n'));
     }
   }
@@ -287,4 +306,17 @@ class Document {
 enum ChangeSource {
   LOCAL,
   REMOTE,
+}
+
+class QuillChange {
+  QuillChange(this.before, this.change, this.source);
+
+  /// Document state before [change].
+  final Delta before;
+
+  /// Change delta applied to the document.
+  final Delta change;
+
+  /// The source of this change.
+  final ChangeSource source;
 }

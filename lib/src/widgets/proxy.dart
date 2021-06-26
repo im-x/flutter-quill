@@ -61,9 +61,10 @@ class RenderBaselineProxy extends RenderProxyBox {
   }
 
   @override
-  double computeDistanceToActualBaseline(TextBaseline baseline) =>
-      _prototypePainter.computeDistanceToActualBaseline(baseline);
-  // SEE What happens + _padding?.top;
+  double computeDistanceToActualBaseline(TextBaseline baseline) {
+    return (_padding?.top ?? 0.0) +
+        _prototypePainter.computeDistanceToActualBaseline(baseline);
+  }
 
   @override
   void performLayout() {

@@ -73,52 +73,52 @@ class PreserveLineStyleOnMergeRule extends DeleteRule {
   }
 }
 
-class EnsureEmbedLineRule extends DeleteRule {
-  const EnsureEmbedLineRule();
+class DeleteBlockEmbedRule extends DeleteRule {
+  const DeleteBlockEmbedRule();
 
   @override
   Delta? applyRule(Delta document, int index,
       {int? len, Object? data, Attribute? attribute}) {
-    final itr = DeltaIterator(document);
+    if (index == 0) return null;
 
-    var op = itr.skip(index);
-    int? indexDelta = 0, lengthDelta = 0, remain = len;
-    var embedFound = op != null && op.data is! String;
-    final hasLineBreakBefore =
-        !embedFound && (op == null || (op.data as String).endsWith('\n'));
-    if (embedFound) {
-      var candidate = itr.next(1);
-      if (remain != null) {
-        remain--;
-        if (candidate.data == '\n') {
-          indexDelta++;
-          lengthDelta--;
+    final prev = DeltaIterator(document).skip(index + len! - 1);
+    final cur = DeltaIterator(document).skip(index + len);
+    final next = DeltaIterator(document).skip(index + len + 1);
 
-          candidate = itr.next(1);
-          remain--;
-          if (candidate.data == '\n') {
-            lengthDelta++;
-          }
-        }
+    if (next != null && next.data is! String) {
+      if (next.data is Map &&
+          (next.data as Map).containsKey('type') &&
+          (next.data as Map)['type'] == 'InlineEmbed') {
+        return null;
       }
-    }
 
-    op = itr.skip(remain!);
-    if (op != null &&
-        (op.data is String ? op.data as String? : '')!.endsWith('\n')) {
-      final candidate = itr.next(1);
-      if (candidate.data is! String && !hasLineBreakBefore) {
-        embedFound = true;
-        lengthDelta--;
+      //删除顶格
+      var offset = 0;
+      if (cur?.data is String) {
+        final p = cur!.data as String;
+        if (p.length == 2 && p.endsWith('\n')) offset++;
       }
+
+      return Delta()
+        ..retain(index - 1)
+        ..delete(len + offset);
     }
 
-    if (!embedFound) {
-      return null;
-    }
+    if (prev != null && prev.data is! String) {
+      if (prev.data is Map &&
+          (prev.data as Map).containsKey('type') &&
+          (prev.data as Map)['type'] == 'InlineEmbed') {
+        return null;
+      }
 
-    return Delta()
-      ..retain(index + indexDelta)
-      ..delete(len! + lengthDelta);
+      //移除前后的空格
+      var offset = 1;
+      if (document.elementAt(0) != prev) offset++;
+
+      return Delta()
+        ..retain(index - offset)
+        ..delete(len + offset);
+    }
+    return null;
   }
 }

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../utils/quill_data.dart';
 import 'box.dart';
+import 'proxy.dart';
 
 /// Style properties of editing cursor.
 class CursorStyle {
@@ -244,53 +246,22 @@ class CursorPainter {
 
   /// Paints cursor on [canvas] at specified [position].
   void paint(Canvas canvas, Offset offset, TextPosition position) {
-    final caretOffset =
-        editable!.getOffsetForCaret(position, prototype) + offset;
-    var caretRect = prototype.shift(caretOffset);
+    final caretOffset = getCaretOffset(position);
+    var caretRect = prototype.shift(caretOffset + offset);
+
     if (style.offset != null) {
       caretRect = caretRect.shift(style.offset!);
     }
 
     if (caretRect.left < 0.0) {
-      // For iOS the cursor may get clipped by the scroll view when
-      // it's located at a beginning of a line. We ensure that this
-      // does not happen here. This may result in the cursor being painted
-      // closer to the character on the right, but it's arguably better
-      // then painting clipped cursor (or even cursor completely hidden).
       caretRect = caretRect.shift(Offset(-caretRect.left, 0));
     }
 
-    final caretHeight = editable!.getFullHeightForCaret(position);
-    if (caretHeight != null) {
-      switch (defaultTargetPlatform) {
-        case TargetPlatform.android:
-        case TargetPlatform.fuchsia:
-        case TargetPlatform.linux:
-        case TargetPlatform.windows:
-          // Override the height to take the full height of the glyph at the
-          // TextPosition when not on iOS. iOS has special handling that
-          // creates a taller caret.
-          caretRect = Rect.fromLTWH(
-            caretRect.left,
-            caretRect.top - 2.0,
-            caretRect.width,
-            caretHeight,
-          );
-          break;
-        case TargetPlatform.iOS:
-        case TargetPlatform.macOS:
-          // Center the caret vertically along the text.
-          caretRect = Rect.fromLTWH(
-            caretRect.left,
-            caretRect.top + (caretHeight - caretRect.height) / 2,
-            caretRect.width,
-            caretRect.height,
-          );
-          break;
-        default:
-          throw UnimplementedError();
-      }
-    }
+    var left = caretRect.left;
+    if (left > 0) left = caretRect.left - 1.0;
+
+    caretRect =
+        Rect.fromLTWH(left, caretRect.top, caretRect.width, caretRect.height);
 
     final pixelPerfectOffset =
         _getPixelPerfectCursorOffset(editable!, caretRect, devicePixelRatio);
@@ -302,10 +273,54 @@ class CursorPainter {
     final paint = Paint()..color = color;
     if (style.radius == null) {
       canvas.drawRect(caretRect, paint);
-    } else {
-      final caretRRect = RRect.fromRectAndRadius(caretRect, style.radius!);
-      canvas.drawRRect(caretRRect, paint);
+      return;
     }
+
+    final caretRRect = RRect.fromRectAndRadius(caretRect, style.radius!);
+    canvas.drawRRect(caretRRect, paint);
+  }
+
+  Offset getCaretOffset(TextPosition position) {
+    Offset? result;
+    if (editable is RenderParagraphProxy) {
+      var offset = position.offset;
+      final child = (editable as RenderParagraphProxy).child;
+
+      if (offset <= 0) offset = 1;
+      final boxes = child!.getBoxesForSelection(
+        TextSelection(
+          baseOffset: offset - 1,
+          extentOffset: offset,
+          affinity: position.affinity,
+        ),
+      );
+
+      if (boxes.isNotEmpty) {
+        final rect = boxes.toList().last.toRect();
+        result = rect.topLeft;
+        if (position.offset <= 0) {
+          result = rect.topLeft;
+        } else {
+          result = rect.topRight;
+        }
+      }
+    }
+    result = result ?? editable!.getOffsetForCaret(position, prototype);
+
+    final dy = result.dy;
+    final count = dy / QuillData.cursorHeight;
+    if (dy < 0 || count < 0.5) {
+      result = result.translate(0, -dy);
+    } else {
+      final floor = count.floor();
+      if (count > floor) {
+        final addLine = count - floor > 0.5;
+        final lineCount = floor + (addLine ? 1 : 0);
+        final realDy = lineCount * QuillData.cursorHeight;
+        result = result.translate(0, -(dy - realDy));
+      }
+    }
+    return result;
   }
 
   Offset _getPixelPerfectCursorOffset(

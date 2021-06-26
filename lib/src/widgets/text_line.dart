@@ -7,6 +7,7 @@ import 'package:tuple/tuple.dart';
 
 import '../models/documents/attribute.dart';
 import '../models/documents/nodes/container.dart' as container;
+import '../models/documents/nodes/embed.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/leaf.dart';
 import '../models/documents/nodes/line.dart';
@@ -43,17 +44,20 @@ class TextLine extends StatelessWidget {
     final childCount = line.childCount;
     if (line.hasEmbed || (childCount > 1 && line.children.first is Embed)) {
       final embed = line.children.first as Embed;
-      return EmbedProxy(embedBuilder(context, embed));
+      if (embed.value is BlockEmbed) {
+        return EmbedProxy(embedBuilder(context, embed));
+      }
     }
 
+    final textAlign = _getTextAlign();
     final textSpan = _buildTextSpan(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
-    final textAlign = _getTextAlign();
+
     final child = RichText(
       text: textSpan,
       textAlign: textAlign,
-      textDirection: textDirection,
       strutStyle: strutStyle,
+      textDirection: textDirection,
       textScaleFactor: MediaQuery.textScaleFactorOf(context),
     );
     return RichTextProxy(
@@ -85,7 +89,7 @@ class TextLine extends StatelessWidget {
   TextSpan _buildTextSpan(BuildContext context) {
     final defaultStyles = styles;
     final children = line.children
-        .map((node) => _getTextSpanFromNode(defaultStyles, node))
+        .map((node) => _getInlineSpanFromNode(defaultStyles, node))
         .toList(growable: false);
 
     var textStyle = const TextStyle();
@@ -119,12 +123,12 @@ class TextLine extends StatelessWidget {
     return TextSpan(children: children, style: textStyle);
   }
 
-  TextSpan _getTextSpanFromNode(DefaultStyles defaultStyles, Node node) {
-    final textNode = node as leaf.Text;
-    final style = textNode.style;
+  InlineSpan _getInlineSpanFromNode(DefaultStyles defaultStyles, Node node) {
+    final leafNode = node as leaf.Leaf;
+    final style = leafNode.style;
     var res = const TextStyle();
-    final color = textNode.style.attributes[Attribute.color.key];
 
+    final color = leafNode.style.attributes[Attribute.color.key];
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
       Attribute.italic.key: defaultStyles.italic,
@@ -146,12 +150,12 @@ class TextLine extends StatelessWidget {
       }
     });
 
-    final font = textNode.style.attributes[Attribute.font.key];
+    final font = leafNode.style.attributes[Attribute.font.key];
     if (font != null && font.value != null) {
       res = res.merge(TextStyle(fontFamily: font.value));
     }
 
-    final size = textNode.style.attributes[Attribute.size.key];
+    final size = leafNode.style.attributes[Attribute.size.key];
     if (size != null && size.value != null) {
       switch (size.value) {
         case 'small':
@@ -183,13 +187,27 @@ class TextLine extends StatelessWidget {
       }
     }
 
-    final background = textNode.style.attributes[Attribute.background.key];
+    final background = leafNode.style.attributes[Attribute.background.key];
     if (background != null && background.value != null) {
       final backgroundColor = stringToColor(background.value);
       res = res.merge(TextStyle(backgroundColor: backgroundColor));
     }
 
-    return TextSpan(text: textNode.value, style: res);
+    if (leafNode is leaf.Text) {
+      return TextSpan(
+        style: res,
+        text: leafNode.value,
+      );
+    } else if (leafNode.value is InlineEmbed) {
+      return WidgetSpan(
+        style: res,
+        child: (leafNode.value as InlineEmbed).getEmbedWidget(),
+      );
+    }
+
+    throw UnimplementedError(
+      'Not Support leaf ${leafNode.runtimeType.toString()}',
+    );
   }
 
   TextStyle _merge(TextStyle a, TextStyle b) {
@@ -502,7 +520,7 @@ class RenderEditableTextLine extends RenderEditableBox {
 
   @override
   Offset getOffsetForCaret(TextPosition position) {
-    return _body!.getOffsetForCaret(position, _caretPrototype) +
+    return _cursorPainter.getCaretOffset(position) +
         (_body!.parentData as BoxParentData).offset;
   }
 
@@ -558,13 +576,11 @@ class RenderEditableTextLine extends RenderEditableBox {
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
-        _caretPrototype = Rect.fromLTWH(0, 0, cursorWidth, cursorHeight + 2);
-        break;
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
       case TargetPlatform.windows:
-        _caretPrototype = Rect.fromLTWH(0, 2, cursorWidth, cursorHeight - 4.0);
+        _caretPrototype = Rect.fromLTWH(0, 0, cursorWidth, cursorHeight);
         break;
       default:
         throw 'Invalid platform';

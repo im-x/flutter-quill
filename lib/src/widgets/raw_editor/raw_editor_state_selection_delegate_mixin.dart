@@ -38,11 +38,12 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
   bool get cutEnabled => widget.toolbarOptions.cut && !widget.readOnly;
 
   @override
-  bool get copyEnabled => widget.toolbarOptions.copy;
+  bool get copyEnabled => widget.toolbarOptions.copy && !widget.readOnly;
 
   @override
   bool get pasteEnabled => widget.toolbarOptions.paste && !widget.readOnly;
 
   @override
-  bool get selectAllEnabled => widget.toolbarOptions.selectAll;
+  bool get selectAllEnabled =>
+      widget.toolbarOptions.selectAll && !widget.readOnly;
 }

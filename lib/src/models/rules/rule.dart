@@ -32,11 +32,14 @@ class Rules {
 
   final List<Rule> _rules;
   static final Rules _instance = Rules([
+    //FormatRules
     const FormatLinkAtCaretPositionRule(),
     const ResolveLineFormatRule(),
     const ResolveInlineFormatRule(),
-    const InsertEmbedsRule(),
-    const ForceNewlineForInsertsAroundEmbedRule(),
+
+    //InsertRules
+    //const InsertEmbedsRule(),
+    //const ForceNewlineForInsertsAroundEmbedRule(),
     const AutoExitBlockRule(),
     const PreserveBlockStyleOnInsertRule(),
     const PreserveLineStyleOnSplitRule(),
@@ -44,7 +47,9 @@ class Rules {
     const AutoFormatLinksRule(),
     const PreserveInlineStylesRule(),
     const CatchAllInsertRule(),
-    const EnsureEmbedLineRule(),
+
+    //DeleteRules
+    const DeleteBlockEmbedRule(),
     const PreserveLineStyleOnMergeRule(),
     const CatchAllDeleteRule(),
   ]);
