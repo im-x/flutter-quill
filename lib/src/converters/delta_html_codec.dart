@@ -331,8 +331,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
     Map<String, dynamic>? parentAttributes,
     Map<String, dynamic>? parentBlockAttributes,
   }) {
-    final attributes = Map.from(parentAttributes ?? {});
-    final blockAttributes = Map.from(parentBlockAttributes ?? {});
+    final attributes = parentAttributes ?? Map<String, dynamic>();
+    final blockAttributes = parentBlockAttributes ?? Map<String, dynamic>();
 
     if (htmlNode is dom.Element) {
       // The html node is an element
@@ -346,8 +346,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
             delta,
             listType: 'ul',
             inList: inList,
-            parentAttributes: attributes as Map<String, dynamic>?,
-            parentBlockAttributes: blockAttributes as Map<String, dynamic>?,
+            parentAttributes: attributes,
+            parentBlockAttributes: blockAttributes,
           );
         });
         return delta;
@@ -359,8 +359,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
             delta,
             listType: 'ol',
             inList: inList,
-            parentAttributes: attributes as Map<String, dynamic>?,
-            parentBlockAttributes: blockAttributes as Map<String, dynamic>?,
+            parentAttributes: attributes,
+            parentBlockAttributes: blockAttributes,
           );
         });
         return delta;
@@ -380,8 +380,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
             delta = _parseNode(
               nodes[i],
               delta,
-              parentAttributes: attributes as Map<String, dynamic>?,
-              parentBlockAttributes: blockAttributes as Map<String, dynamic>?,
+              parentAttributes: attributes,
+              parentBlockAttributes: blockAttributes,
             );
           }
           if (delta.isEmpty ||
@@ -402,8 +402,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
           element,
           delta,
           inList: inList,
-          parentAttributes: attributes as Map<String, dynamic>?,
-          parentBlockAttributes: blockAttributes as Map<String, dynamic>?,
+          parentAttributes: attributes,
+          parentBlockAttributes: blockAttributes,
         );
         return delta;
       }
@@ -413,7 +413,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
       _insertText(
         delta,
         text.text,
-        attributes: attributes as Map<String, dynamic>?,
+        attributes: attributes,
       );
       return delta;
     } else {
@@ -482,8 +482,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
     String? listType,
   }) {
     final type = _supportedHTMLElements[element.localName];
-    final attributes = Map.from(parentAttributes ?? {});
-    final blockAttributes = Map.from(parentBlockAttributes ?? {});
+    final attributes = parentAttributes ?? Map<String, dynamic>();
+    final blockAttributes = parentBlockAttributes ?? Map<String, dynamic>();
 
     if (type == _HtmlType.BLOCK) {
       if (element.localName == 'blockquote') {
@@ -508,12 +508,12 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
           node,
           delta,
           inList: element.localName == 'li',
-          parentAttributes: attributes as Map<String, dynamic>?,
-          parentBlockAttributes: blockAttributes as Map<String, dynamic>?,
+          parentAttributes: attributes,
+          parentBlockAttributes: blockAttributes,
         );
       });
       if (parentBlockAttributes!.isEmpty) {
-        delta.insert('\n', blockAttributes as Map<String, dynamic>?);
+        delta.insert('\n', blockAttributes);
       }
       return delta;
     } else if (type == _HtmlType.EMBED) {
@@ -577,8 +577,8 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
         // The element has no child elements i.e. this is the leaf element
         _insertText(
           delta,
-          element.text.trimRight(),
-          attributes: attributes as Map<String, dynamic>?,
+          element.text,
+          attributes: attributes,
         );
         if (attributes['a'] != null) {
           // It's a link
@@ -594,7 +594,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
             delta = _parseNode(
               node,
               delta,
-              parentAttributes: attributes as Map<String, dynamic>?,
+              parentAttributes: attributes,
             );
           },
         );
