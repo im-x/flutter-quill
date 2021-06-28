@@ -159,6 +159,7 @@ class QuillEditor extends StatefulWidget {
   factory QuillEditor.input({
     required QuillController controller,
     required FocusNode focusNode,
+    String? placeholder,
     bool? expand,
   }) {
     return QuillEditor(
@@ -169,6 +170,7 @@ class QuillEditor extends StatefulWidget {
       scrollable: true,
       focusNode: focusNode,
       padding: EdgeInsets.zero,
+      placeholder: placeholder,
       scrollController: ScrollController(),
       minHeight: expand == true ? null : QuillData.cursorHeight * 1,
       maxHeight: expand == true ? null : QuillData.cursorHeight * 4,

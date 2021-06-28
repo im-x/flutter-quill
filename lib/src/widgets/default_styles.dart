@@ -99,22 +99,6 @@ class DefaultStyles {
     );
 
     const baseSpacing = Tuple2<double, double>(0, 0);
-    String fontFamily;
-    switch (themeData.platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-        fontFamily = 'Menlo';
-        break;
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.windows:
-      case TargetPlatform.linux:
-        fontFamily = 'Roboto Mono';
-        break;
-      default:
-        throw UnimplementedError();
-    }
-
     return DefaultStyles(
         h1: DefaultTextBlockStyle(
             defaultTextStyle.style.copyWith(
@@ -157,11 +141,7 @@ class DefaultStyles {
           decoration: TextDecoration.underline,
         ),
         placeHolder: DefaultTextBlockStyle(
-            defaultTextStyle.style.copyWith(
-              fontSize: 20,
-              height: 1.5,
-              color: Colors.grey.withOpacity(0.6),
-            ),
+            baseStyle.copyWith(color: Colors.grey),
             const Tuple2(0, 0),
             const Tuple2(0, 0),
             null),
@@ -179,7 +159,6 @@ class DefaultStyles {
         code: DefaultTextBlockStyle(
             TextStyle(
               color: Colors.blue.shade900.withOpacity(0.9),
-              fontFamily: fontFamily,
               fontSize: 13,
               height: 1.15,
             ),
