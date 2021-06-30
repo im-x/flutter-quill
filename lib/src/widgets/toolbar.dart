@@ -75,7 +75,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     bool showLink = true,
     bool showHistory = true,
     bool showHorizontalRule = false,
-    bool multiRowsDisplay = true,
+    bool multiRowsDisplay = false,
     OnImagePickCallback? onImagePickCallback,
     FilePickImpl? filePickImpl,
     WebImagePickImpl? webImagePickImpl,
@@ -385,7 +385,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (multiRowsDisplay ?? true) {
+    if (multiRowsDisplay ?? false) {
       return Wrap(
         alignment: WrapAlignment.center,
         runSpacing: 4,
@@ -393,10 +393,13 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
         children: children,
       );
     }
-    return Container(
-      constraints: BoxConstraints.tightFor(height: preferredSize.height),
-      color: color ?? Theme.of(context).canvasColor,
-      child: ArrowIndicatedButtonList(buttons: children),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints.tightFor(height: preferredSize.height),
+        color: color ?? Theme.of(context).canvasColor,
+        child: ArrowIndicatedButtonList(buttons: children),
+      ),
     );
   }
 }
