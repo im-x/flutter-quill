@@ -417,6 +417,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
     if (result.node == null) {
       return false;
     }
+
     final line = result.node as Line;
     final segmentResult = line.queryChild(result.offset, true);
     if (segmentResult.node == null) {
@@ -430,17 +431,19 @@ class _QuillEditorSelectionGestureDetectorBuilder
 
     final segment = segmentResult.node as leaf.Leaf;
     if (segment.style.containsKey(Attribute.link.key)) {
-      _linkTap(segment);
+      return _linkTap(segment);
     } else if (getEditor()!.widget.readOnly && segment.value is Embeddable) {
-      _embedTap(segment.value as Embeddable);
+      return _embedTap(segment.value as Embeddable);
     }
+
     return false;
   }
 
-  void _linkTap(leaf.Leaf leaf) {
-    var launchUrl = getEditor()!.widget.onLaunchUrl;
-    launchUrl ??= _launchUrl;
+  bool _linkTap(leaf.Leaf leaf) {
+    var handled = false;
+    final launchUrl = getEditor()!.widget.onLaunchUrl ?? _launchUrl;
     String? link = leaf.style.attributes[Attribute.link.key]!.value;
+
     if (getEditor()!.widget.readOnly && link != null) {
       link = link.trim();
       final lower = link.toLowerCase();
@@ -448,21 +451,25 @@ class _QuillEditorSelectionGestureDetectorBuilder
         link = 'https://$link';
       }
       launchUrl(link);
+      handled = true;
     }
+    return handled;
   }
 
-  void _embedTap(Embeddable embed) {
+  bool _embedTap(Embeddable embed) {
+    var handled = false;
     if (embed is InlineEmbed) {
-      embed.onTap();
+      handled = embed.onTap();
     } else {
       final blockEmbed = embed as BlockEmbed;
       if (blockEmbed.type == 'image') {
-        _imageTap(blockEmbed);
+        handled = _imageTap(blockEmbed);
       }
     }
+    return handled;
   }
 
-  void _imageTap(BlockEmbed blockEmbed) {
+  bool _imageTap(BlockEmbed blockEmbed) {
     final imageUrl = _standardizeImageUrl(blockEmbed.data);
     final image = imageUrl.startsWith('http')
         ? NetworkImage(imageUrl)
@@ -476,6 +483,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
         builder: (context) => ImageTapWrapper(imageProvider: image),
       ),
     );
+    return true;
   }
 
   Future<void> _launchUrl(String url) async {
