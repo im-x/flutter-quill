@@ -60,13 +60,11 @@ class InlineEmbed extends Embeddable {
       InlineEmbed(mentionName, info);
 
   Widget getEmbedWidget() {
-    final widget =
-        QuillData.getInlineEmbedWidget?.call(type) ?? const SizedBox.shrink();
-    return widget;
+    return QuillData.getInlineEmbedWidget?.call(this) ??
+        const SizedBox.shrink();
   }
 
   bool onTap() {
-    final handled = QuillData.onInlineEmbedTap?.call(type) == true;
-    return handled;
+    return QuillData.onInlineEmbedTap?.call(this) == true;
   }
 }
