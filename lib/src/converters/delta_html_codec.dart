@@ -51,6 +51,7 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
   static const kOrderedList = 'ol';
   static const kCode = 'code';
   static const kQuote = 'blockquote';
+  static const kStrike = 's';
 
   StringBuffer? htmlBuffer;
 
@@ -204,6 +205,8 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
       bool isLink(Leaf leaf) => leaf.style.contains(Attribute.link);
       bool isBold(Leaf leaf) => leaf.style.containsSame(Attribute.bold);
       bool isItalic(Leaf leaf) => leaf.style.containsSame(Attribute.italic);
+      bool isStrike(Leaf leaf) =>
+          leaf.style.containsSame(Attribute.strikeThrough);
 
       //css style
       bool isColor(Leaf leaf) => leaf.style.contains(Attribute.color);
@@ -217,6 +220,9 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
         }
         if (isItalic(node)) {
           tagsToOpen.add(kItalic);
+        }
+        if (isStrike(node)) {
+          tagsToOpen.add(kStrike);
         }
         if (isColor(node)) {
           tagsToOpen.add(kSpan);
@@ -512,7 +518,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
           parentBlockAttributes: blockAttributes,
         );
       });
-      if (parentBlockAttributes!.isEmpty) {
+      if (!blockAttributes.isEmpty) {
         delta.insert('\n', blockAttributes);
       }
       return delta;
@@ -542,6 +548,9 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
       }
       if (element.localName == 'a') {
         attributes[Attribute.link.key] = element.attributes['href'];
+      }
+      if (element.localName == 's') {
+        attributes[Attribute.strikeThrough.key] = Attribute.strikeThrough.value;
       }
       if (element.localName == 'span') {
         final style = element.attributes['style'];
@@ -621,6 +630,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
     'a': _HtmlType.INLINE,
     'p': _HtmlType.INLINE,
     'span': _HtmlType.INLINE,
+    's': _HtmlType.INLINE,
   };
 }
 
