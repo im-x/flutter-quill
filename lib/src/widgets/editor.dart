@@ -181,6 +181,7 @@ class QuillEditor extends StatefulWidget {
     required String html,
     GestureTapCallback? onTapUp,
     GestureLongPressCallback? onLongPress,
+    DefaultStyles? customStyles,
   }) {
     final controller = QuillController(
       document: Document.fromHtml(html),
@@ -199,6 +200,7 @@ class QuillEditor extends StatefulWidget {
       scrollController: ScrollController(),
       onTapUp: onTapUp,
       onLongPress: onLongPress,
+      customStyles: customStyles,
     );
   }
 
