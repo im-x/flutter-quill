@@ -242,7 +242,7 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
         htmlBuffer!.write(node.value);
 
         if (tagsToOpen.isNotEmpty) {
-          _writeTagsOrdered(tagsToOpen.reversed);
+          _writeTagsOrdered(tagsToOpen.reversed, close: true);
         }
       } else if (node is Embed) {
         bool isEmbed(Leaf node) => node.value is InlineEmbed;
@@ -283,9 +283,10 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
     }
   }
 
-  void _writeTagsOrdered(Iterable<String> tags, {Map<String, String>? styles}) {
+  void _writeTagsOrdered(Iterable<String> tags,
+      {Map<String, String>? styles, bool close = false}) {
     tags.forEach((tag) {
-      _writeTag(tag, styles: styles);
+      _writeTag(tag, styles: styles, close: close);
     });
   }
 }
