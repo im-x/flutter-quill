@@ -105,7 +105,7 @@ class RawEditorState extends EditorState
   final GlobalKey _editorKey = GlobalKey();
 
   // Keyboard
-  late KeyboardListener _keyboardListener;
+  late KeyboardEventHandler _keyboardListener;
   KeyboardVisibilityController? _keyboardVisibilityController;
   StreamSubscription<bool>? _keyboardVisibilitySubscription;
   bool _keyboardVisible = false;
@@ -332,7 +332,7 @@ class RawEditorState extends EditorState
       tickerProvider: this,
     );
 
-    _keyboardListener = KeyboardListener(
+    _keyboardListener = KeyboardEventHandler(
       handleCursorMovement,
       handleShortcut,
       handleDelete,
