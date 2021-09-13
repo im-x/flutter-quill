@@ -248,5 +248,5 @@ class Embed extends Leaf {
   /// // Embed nodes are represented as unicode object replacement character in
   // plain text.
   @override
-  String toPlainText() => kObjectReplacementCharacter;
+  String toPlainText() => value.toString();
 }

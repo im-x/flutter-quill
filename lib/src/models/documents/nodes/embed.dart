@@ -21,6 +21,10 @@ class Embeddable {
     return {'type': runtimeType.toString(), type: data};
   }
 
+  String toString() {
+    throw "Impl by Child";
+  }
+
   static Embeddable fromJson(Map<String, dynamic> json) {
     assert(json.length == 2, 'Embeddable map need two key');
 
@@ -47,6 +51,17 @@ class BlockEmbed extends Embeddable {
 
   static const String imageType = 'image';
   static BlockEmbed image(String imageUrl) => BlockEmbed(imageType, imageUrl);
+
+  @override
+  String toString() {
+    if (type == horizontalRuleType) {
+      return '';
+    } else if (type == imageType) {
+      return '[图片]';
+    } else {
+      return '';
+    }
+  }
 }
 
 class InlineEmbed extends Embeddable {
@@ -66,5 +81,17 @@ class InlineEmbed extends Embeddable {
 
   bool onTap() {
     return QuillData.onInlineEmbedTap?.call(this) == true;
+  }
+
+  @override
+  String toString() {
+    if (type == emojiName) {
+      return '[:${data.toString()}]';
+    } else if (type == mentionName) {
+      final map = data as Map<int, String>;
+      return '@${map.values.first}';
+    } else {
+      return '';
+    }
   }
 }
