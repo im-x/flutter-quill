@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/src/models/documents/nodes/embed.dart';
 import 'package:string_validator/string_validator.dart';
 import 'package:tuple/tuple.dart';
 
@@ -120,6 +121,9 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
         }
         return VideoApp(
             videoUrl: videoUrl, context: context, readOnly: readOnly);
+      case 'emoji':
+      case 'mention':
+        return (node.value as InlineEmbed).getEmbedWidget();
       default:
         throw UnimplementedError(
           'Embeddable type "${node.value.type}" is not supported by default '

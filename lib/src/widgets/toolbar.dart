@@ -347,6 +347,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool showClearFormat = true,
       bool showListNumbers = true,
       bool showListBullets = true,
+      bool showIndent = true,
       bool showLink = true,
       Widget? externalPre}) {
     return QuillToolbar(
@@ -417,6 +418,24 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
         Visibility(
           visible: showLink,
           child: LinkStyleButton(controller: controller),
+        ),
+        Visibility(
+          visible: showIndent,
+          child: IndentButton(
+            icon: Icons.format_indent_increase,
+            iconSize: kDefaultIconSize,
+            controller: controller,
+            isIncrease: true,
+          ),
+        ),
+        Visibility(
+          visible: showIndent,
+          child: IndentButton(
+            icon: Icons.format_indent_decrease,
+            iconSize: kDefaultIconSize,
+            controller: controller,
+            isIncrease: false,
+          ),
         ),
       ],
     );
