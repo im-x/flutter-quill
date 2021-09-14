@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 import '../../utils/diff_delta.dart';
 import '../editor.dart';
@@ -48,19 +49,26 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       _lastKnownRemoteTextEditingValue = getTextEditingValue();
       _textInputConnection = TextInput.attach(
         this,
-        TextInputConfiguration(
-          inputType: TextInputType.multiline,
-          readOnly: widget.readOnly,
-          inputAction: TextInputAction.newline,
-          enableSuggestions: !widget.readOnly,
-          keyboardAppearance: widget.keyboardAppearance,
-          textCapitalization: widget.textCapitalization,
-        ),
+        (widget.isSimpleInput != null && widget.isSimpleInput! == true)
+            ? TextInputConfiguration(
+                readOnly: widget.readOnly,
+                inputAction: TextInputAction.send,
+                enableSuggestions: !widget.readOnly,
+                keyboardAppearance: widget.keyboardAppearance,
+                textCapitalization: widget.textCapitalization,
+              )
+            : TextInputConfiguration(
+                inputType: TextInputType.multiline,
+                readOnly: widget.readOnly,
+                inputAction: TextInputAction.newline,
+                enableSuggestions: !widget.readOnly,
+                keyboardAppearance: widget.keyboardAppearance,
+                textCapitalization: widget.textCapitalization,
+              ),
       );
 
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);
     }
-
     _textInputConnection!.show();
   }
 
@@ -144,7 +152,55 @@ mixin RawEditorStateTextInputClientMixin on EditorState
 
   @override
   void performAction(TextInputAction action) {
-    // no-op
+    switch (action) {
+      case TextInputAction.send:
+        _finalizeEditing(action, shouldUnfocus: true);
+        break;
+      default:
+        break;
+    }
+  }
+
+  @pragma('vm:notify-debugger-on-exception')
+  void _finalizeEditing(TextInputAction action, {required bool shouldUnfocus}) {
+    if (shouldUnfocus) {
+      switch (action) {
+        case TextInputAction.none:
+        case TextInputAction.unspecified:
+        case TextInputAction.done:
+        case TextInputAction.go:
+        case TextInputAction.search:
+        case TextInputAction.send:
+        case TextInputAction.continueAction:
+        case TextInputAction.join:
+        case TextInputAction.route:
+        case TextInputAction.emergencyCall:
+        case TextInputAction.newline:
+          widget.focusNode.unfocus();
+          break;
+        case TextInputAction.next:
+          widget.focusNode.nextFocus();
+          break;
+        case TextInputAction.previous:
+          widget.focusNode.previousFocus();
+          break;
+      }
+    }
+
+    // Invoke optional callback with the user's submitted content.
+    try {
+      if (action == TextInputAction.send) {
+        widget.onSubmitted?.call("");
+      }
+      // widget.onSubmitted?.call(_value.text);
+    } catch (exception, stack) {
+      FlutterError.reportError(FlutterErrorDetails(
+        exception: exception,
+        stack: stack,
+        library: 'widgets',
+        context: ErrorDescription('while calling onSubmitted for $action'),
+      ));
+    }
   }
 
   @override

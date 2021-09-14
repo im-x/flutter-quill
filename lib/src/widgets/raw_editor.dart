@@ -58,6 +58,8 @@ class RawEditor extends StatefulWidget {
     this.scrollPhysics,
     this.embedBuilder,
     this.customStyleBuilder,
+    this.onSubmitted,
+    this.isSimpleInput,
   )   : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
@@ -91,6 +93,9 @@ class RawEditor extends StatefulWidget {
   final ScrollPhysics? scrollPhysics;
   final EmbedBuilder embedBuilder;
   final CustomStyleBuilder? customStyleBuilder;
+  final ValueChanged<String>? onSubmitted;
+  final bool? isSimpleInput;
+
   @override
   State<StatefulWidget> createState() => RawEditorState();
 }

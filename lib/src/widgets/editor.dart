@@ -257,6 +257,8 @@ class QuillEditor extends StatefulWidget {
       this.onSingleLongTapEnd,
       this.embedBuilder = _defaultEmbedBuilder,
       this.customStyleBuilder,
+      this.onSubmitted,
+      this.isSimpleInput,
       Key? key});
 
   factory QuillEditor.basic({
@@ -279,6 +281,8 @@ class QuillEditor extends StatefulWidget {
     required FocusNode focusNode,
     String? placeholder,
     bool? expand,
+    ValueChanged<String>? onSubmitted,
+    bool? isSimpleInput,
   }) {
     return QuillEditor(
       controller: controller,
@@ -292,6 +296,8 @@ class QuillEditor extends StatefulWidget {
       scrollController: ScrollController(),
       minHeight: expand == true ? null : QuillData.cursorHeight * 1,
       maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
+      onSubmitted: onSubmitted,
+      isSimpleInput: isSimpleInput,
     );
   }
 
@@ -366,6 +372,8 @@ class QuillEditor extends StatefulWidget {
 
   final EmbedBuilder embedBuilder;
   final CustomStyleBuilder? customStyleBuilder;
+  final ValueChanged<String>? onSubmitted;
+  final bool? isSimpleInput;
 
   @override
   _QuillEditorState createState() => _QuillEditorState();
@@ -471,6 +479,8 @@ class _QuillEditorState extends State<QuillEditor>
         widget.scrollPhysics,
         widget.embedBuilder,
         widget.customStyleBuilder,
+        widget.onSubmitted,
+        widget.isSimpleInput,
       ),
     );
   }
