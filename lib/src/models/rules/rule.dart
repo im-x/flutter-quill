@@ -36,7 +36,6 @@ class Rules {
     const FormatLinkAtCaretPositionRule(),
     const ResolveLineFormatRule(),
     const ResolveInlineFormatRule(),
-
     //InsertRules
     //const InsertEmbedsRule(),
     //const ForceNewlineForInsertsAroundEmbedRule(),

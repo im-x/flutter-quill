@@ -25,8 +25,7 @@ class Document {
     _loadDocument(delta);
   }
 
-  Document.fromJson(String json)
-      : _delta = _transform(Delta.fromJson(jsonDecode(json))) {
+  Document.fromJson(List json) : _delta = _transform(Delta.fromJson(json)) {
     _loadDocument(_delta);
   }
 
@@ -64,8 +63,7 @@ class Document {
   final StreamController<QuillChange> _observer = StreamController.broadcast();
   Stream<QuillChange> get changes => _observer.stream;
 
-  Delta insert(int index, Object? data,
-      {int replaceLength = 0, bool autoAppendNewlineAfterImage = true}) {
+  Delta insert(int index, Object? data, {int replaceLength = 0}) {
     assert(index >= 0);
     assert(data is String || data is Embeddable);
     if (data is Embeddable) {
@@ -76,8 +74,7 @@ class Document {
 
     final delta = _rules.apply(RuleType.INSERT, this, index,
         data: data, len: replaceLength);
-    compose(delta, ChangeSource.LOCAL,
-        autoAppendNewlineAfterImage: autoAppendNewlineAfterImage);
+    compose(delta, ChangeSource.LOCAL);
     return delta;
   }
 
@@ -90,8 +87,7 @@ class Document {
     return delta;
   }
 
-  Delta replace(int index, int len, Object? data,
-      {bool autoAppendNewlineAfterImage = true}) {
+  Delta replace(int index, int len, Object? data) {
     assert(index >= 0);
     assert(data is String || data is Embeddable);
 
@@ -104,9 +100,7 @@ class Document {
     // We have to insert before applying delete rules
     // Otherwise delete would be operating on stale document snapshot.
     if (dataIsNotEmpty) {
-      delta = insert(index, data,
-          replaceLength: len,
-          autoAppendNewlineAfterImage: autoAppendNewlineAfterImage);
+      delta = insert(index, data, replaceLength: len);
     }
 
     if (len > 0) {
@@ -132,9 +126,17 @@ class Document {
     return delta;
   }
 
+  /// Only attributes applied to all characters within this range are
+  /// included in the result.
   Style collectStyle(int index, int len) {
     final res = queryChild(index);
     return (res.node as Line).collectStyle(res.offset, len);
+  }
+
+  /// Returns all styles for any character within the specified text range.
+  List<Style> collectAllStyles(int index, int len) {
+    final res = queryChild(index);
+    return (res.node as Line).collectAllStyles(res.offset, len);
   }
 
   ChildQuery queryChild(int offset) {
@@ -146,15 +148,13 @@ class Document {
     return block.queryChild(res.offset, true);
   }
 
-  void compose(Delta delta, ChangeSource changeSource,
-      {bool autoAppendNewlineAfterImage = true}) {
+  void compose(Delta delta, ChangeSource changeSource) {
     assert(!_observer.isClosed);
     delta.trim();
     assert(delta.isNotEmpty);
 
     var offset = 0;
-    delta = _transform(delta,
-        autoAppendNewlineAfterImage: autoAppendNewlineAfterImage);
+    delta = _transform(delta);
     final originalDelta = toDelta();
     for (final op in delta.toList()) {
       final style =
@@ -199,43 +199,38 @@ class Document {
 
   bool get hasRedo => _history.hasRedo;
 
-  static Delta _transform(Delta delta,
-      {bool autoAppendNewlineAfterImage = true}) {
+  static Delta _transform(Delta delta) {
     final res = Delta();
     final ops = delta.toList();
     for (var i = 0; i < ops.length; i++) {
       final op = ops[i];
       res.push(op);
-      if (autoAppendNewlineAfterImage) {
-        _autoAppendNewlineAfterImage(i, ops, op, res);
-      }
+      _autoAppendNewlineAfterEmbeddable(i, ops, op, res, 'video');
     }
     return res;
   }
 
-  static void _autoAppendNewlineAfterImage(
-      int i, List<Operation> ops, Operation op, Delta res) {
-    final nextOp = i + 1 < ops.length ? ops[i + 1] : null;
-
-    final nextIsInsert = nextOp?.isInsert ?? false;
-    final nextIsImage = nextOp?.data is Map &&
-        (nextOp?.data as Map).containsKey(BlockEmbed.imageType);
-
-    final opIsLineBreak =
-        op.data is String && (op.data as String).endsWith('\n');
-    final nextOpIsImage = nextIsInsert && nextIsImage;
-    if (nextOpIsImage && !opIsLineBreak) {
+  static void _autoAppendNewlineAfterEmbeddable(
+      int i, List<Operation> ops, Operation op, Delta res, String type) {
+    final nextOpIsEmbed = i + 1 < ops.length &&
+        ops[i + 1].isInsert &&
+        ops[i + 1].data is Map &&
+        (ops[i + 1].data as Map).containsKey(type);
+    if (nextOpIsEmbed &&
+        op.data is String &&
+        (op.data as String).isNotEmpty &&
+        !(op.data as String).endsWith('\n')) {
       res.push(Operation.insert('\n'));
     }
-
-    final opIsImage =
-        op.data is Map && (op.data as Map).containsKey(BlockEmbed.imageType);
-    final nextIsLineBreak =
-        nextOp?.data is String && (nextOp?.data as String).startsWith('\n');
-
-    final opInsertImage = op.isInsert && opIsImage;
-    final nextOpIsLineBreak = nextIsInsert && nextIsLineBreak;
-    if (opInsertImage && (i + 1 == ops.length - 1 || !nextOpIsLineBreak)) {
+    // embed could be image or video
+    final opInsertEmbed =
+        op.isInsert && op.data is Map && (op.data as Map).containsKey(type);
+    final nextOpIsLineBreak = i + 1 < ops.length &&
+        ops[i + 1].isInsert &&
+        ops[i + 1].data is String &&
+        (ops[i + 1].data as String).startsWith('\n');
+    if (opInsertEmbed && (i + 1 == ops.length - 1 || !nextOpIsLineBreak)) {
+      // automatically append '\n' for embeddable
       res.push(Operation.insert('\n'));
     }
   }

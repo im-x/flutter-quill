@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -25,7 +26,9 @@ class TextLine extends StatelessWidget {
     required this.line,
     required this.embedBuilder,
     required this.styles,
+    required this.readOnly,
     this.textDirection,
+    this.customStyleBuilder,
     Key? key,
   }) : super(key: key);
 
@@ -33,24 +36,21 @@ class TextLine extends StatelessWidget {
   final TextDirection? textDirection;
   final EmbedBuilder embedBuilder;
   final DefaultStyles styles;
+  final bool readOnly;
+  final CustomStyleBuilder? customStyleBuilder;
 
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasMediaQuery(context));
-
-    // In rare circumstances, the line could contain an Embed & a Text of
-    // newline, which is unexpected and probably we should find out the
-    // root cause
-    final childCount = line.childCount;
-    if (line.hasEmbed || (childCount > 1 && line.children.first is Embed)) {
-      final embed = line.children.first as Embed;
+    if (line.hasEmbed && line.childCount == 1) {
+      // For video, it is always single child
+      final embed = line.children.single as Embed;
       if (embed.value is BlockEmbed) {
-        return EmbedProxy(embedBuilder(context, embed));
+        return EmbedProxy(embedBuilder(context, embed, readOnly));
       }
     }
-
+    final textSpan = _getTextSpanForWholeLine(context);
     final textAlign = _getTextAlign();
-    final textSpan = _buildTextSpan(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
 
     final child = RichText(
@@ -72,31 +72,67 @@ class TextLine extends StatelessWidget {
         null);
   }
 
+  InlineSpan _getTextSpanForWholeLine(BuildContext context) {
+    final lineStyle = _getLineStyle(styles);
+    if (!line.hasEmbed) {
+      return _buildTextSpan(styles, line.children, lineStyle);
+    }
+
+    // The line could contain more than one Embed & more than one Text
+    final textSpanChildren = <InlineSpan>[];
+    var textNodes = LinkedList<Node>();
+    for (final child in line.children) {
+      if (child is Embed) {
+        if (textNodes.isNotEmpty) {
+          textSpanChildren.add(_buildTextSpan(styles, textNodes, lineStyle));
+          textNodes = LinkedList<Node>();
+        }
+        // Here it should be image
+        final embed = WidgetSpan(
+            child: EmbedProxy(embedBuilder(context, child, readOnly)));
+        textSpanChildren.add(embed);
+        continue;
+      }
+
+      // here child is Text node and its value is cloned
+      textNodes.add(child.clone());
+    }
+
+    if (textNodes.isNotEmpty) {
+      textSpanChildren.add(_buildTextSpan(styles, textNodes, lineStyle));
+    }
+
+    return TextSpan(style: lineStyle, children: textSpanChildren);
+  }
+
   TextAlign _getTextAlign() {
     final alignment = line.style.attributes[Attribute.align.key];
     if (alignment == Attribute.leftAlignment) {
-      return TextAlign.left;
+      return TextAlign.start;
     } else if (alignment == Attribute.centerAlignment) {
       return TextAlign.center;
     } else if (alignment == Attribute.rightAlignment) {
-      return TextAlign.right;
+      return TextAlign.end;
     } else if (alignment == Attribute.justifyAlignment) {
       return TextAlign.justify;
     }
     return TextAlign.start;
   }
 
-  TextSpan _buildTextSpan(BuildContext context) {
-    final defaultStyles = styles;
-    final children = line.children
-        .map((node) => _getInlineSpanFromNode(defaultStyles, node))
+  TextSpan _buildTextSpan(DefaultStyles defaultStyles, LinkedList<Node> nodes,
+      TextStyle lineStyle) {
+    final children = nodes
+        .map((node) => _getTextSpanFromNode(defaultStyles, node))
         .toList(growable: false);
 
+    return TextSpan(children: children, style: lineStyle);
+  }
+
+  TextStyle _getLineStyle(DefaultStyles defaultStyles) {
     var textStyle = const TextStyle();
 
     if (line.style.containsKey(Attribute.placeholder.key)) {
-      textStyle = defaultStyles.placeHolder!.style;
-      return TextSpan(children: children, style: textStyle);
+      return defaultStyles.placeHolder!.style;
     }
 
     final header = line.style.attributes[Attribute.header.key];
@@ -108,30 +144,54 @@ class TextLine extends StatelessWidget {
 
     textStyle = textStyle.merge(m[header] ?? defaultStyles.paragraph!.style);
 
-    final block = line.style.getBlockExceptHeader();
+    // Only retrieve exclusive block format for the line style purpose
+    Attribute? block;
+    line.style.getBlocksExceptHeader().forEach((key, value) {
+      if (Attribute.exclusiveBlockKeys.contains(key)) {
+        block = value;
+      }
+    });
+
     TextStyle? toMerge;
     if (block == Attribute.blockQuote) {
       toMerge = defaultStyles.quote!.style;
     } else if (block == Attribute.codeBlock) {
       toMerge = defaultStyles.code!.style;
-    } else if (block != null) {
+    } else if (block == Attribute.list) {
       toMerge = defaultStyles.lists!.style;
     }
 
     textStyle = textStyle.merge(toMerge);
+    textStyle = _applyCustomAttributes(textStyle, line.style.attributes);
 
-    return TextSpan(children: children, style: textStyle);
+    return textStyle;
   }
 
-  InlineSpan _getInlineSpanFromNode(DefaultStyles defaultStyles, Node node) {
-    final leafNode = node as leaf.Leaf;
-    final style = leafNode.style;
-    var res = const TextStyle();
+  TextStyle _applyCustomAttributes(
+      TextStyle textStyle, Map<String, Attribute> attributes) {
+    if (customStyleBuilder == null) {
+      return textStyle;
+    }
+    attributes.keys.forEach((key) {
+      final attr = attributes[key];
+      if (attr != null) {
+        /// Custom Attribute
+        final customAttr = customStyleBuilder!.call(attr);
+        textStyle = textStyle.merge(customAttr);
+      }
+    });
+    return textStyle;
+  }
 
-    final color = leafNode.style.attributes[Attribute.color.key];
+  TextSpan _getTextSpanFromNode(DefaultStyles defaultStyles, Node node) {
+    final textNode = node as leaf.Text;
+    final style = textNode.style;
+    var res = const TextStyle(); // This is inline text style
+    final color = textNode.style.attributes[Attribute.color.key];
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
       Attribute.italic.key: defaultStyles.italic,
+      Attribute.small.key: defaultStyles.small,
       Attribute.link.key: defaultStyles.link,
       Attribute.underline.key: defaultStyles.underline,
       Attribute.strikeThrough.key: defaultStyles.strikeThrough,
@@ -150,12 +210,12 @@ class TextLine extends StatelessWidget {
       }
     });
 
-    final font = leafNode.style.attributes[Attribute.font.key];
+    final font = textNode.style.attributes[Attribute.font.key];
     if (font != null && font.value != null) {
       res = res.merge(TextStyle(fontFamily: font.value));
     }
 
-    final size = leafNode.style.attributes[Attribute.size.key];
+    final size = textNode.style.attributes[Attribute.size.key];
     if (size != null && size.value != null) {
       switch (size.value) {
         case 'small':
@@ -187,27 +247,14 @@ class TextLine extends StatelessWidget {
       }
     }
 
-    final background = leafNode.style.attributes[Attribute.background.key];
+    final background = textNode.style.attributes[Attribute.background.key];
     if (background != null && background.value != null) {
       final backgroundColor = stringToColor(background.value);
       res = res.merge(TextStyle(backgroundColor: backgroundColor));
     }
 
-    if (leafNode is leaf.Text) {
-      return TextSpan(
-        style: res,
-        text: leafNode.value,
-      );
-    } else if (leafNode.value is InlineEmbed) {
-      return WidgetSpan(
-        style: res,
-        child: (leafNode.value as InlineEmbed).getEmbedWidget(),
-      );
-    }
-
-    throw UnimplementedError(
-      'Not Support leaf ${leafNode.runtimeType.toString()}',
-    );
+    res = _applyCustomAttributes(res, textNode.style.attributes);
+    return TextSpan(text: textNode.value, style: res);
   }
 
   TextStyle _merge(TextStyle a, TextStyle b) {
@@ -520,7 +567,9 @@ class RenderEditableTextLine extends RenderEditableBox {
 
   @override
   Offset getOffsetForCaret(TextPosition position) {
-    return _cursorPainter.getCaretOffset(position) +
+    // return _cursorPainter.getCaretOffset(position) +
+    //     (_body!.parentData as BoxParentData).offset;
+    return _body!.getOffsetForCaret(position, _caretPrototype) +
         (_body!.parentData as BoxParentData).offset;
   }
 
@@ -812,6 +861,27 @@ class RenderEditableTextLine extends RenderEditableBox {
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
     return _children.first.hitTest(result, position: position);
+  }
+
+  @override
+  Rect getLocalRectForCaret(TextPosition position) {
+    final caretOffset = getOffsetForCaret(position);
+    var rect =
+        Rect.fromLTWH(0, 0, cursorWidth, cursorHeight).shift(caretOffset);
+    final cursorOffset = cursorCont.style.offset;
+    // Add additional cursor offset (generally only if on iOS).
+    if (cursorOffset != null) rect = rect.shift(cursorOffset);
+    return rect;
+  }
+
+  @override
+  TextPosition globalToLocalPosition(TextPosition position) {
+    assert(getContainer().containsOffset(position.offset),
+        'The provided text position is not in the current node');
+    return TextPosition(
+      offset: position.offset - getContainer().documentOffset,
+      affinity: position.affinity,
+    );
   }
 }
 
