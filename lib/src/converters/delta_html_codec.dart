@@ -433,7 +433,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
       {Map<String, dynamic>? attributes}) {
     final texts = <String>[];
 
-    final reg = RegExp(r'\[@\d+:.+?\]|\[:.+?\]');
+    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]');
     final matches = reg.allMatches(text);
     if (matches.isNotEmpty) {
       splitTextByMatches(text, matches, texts);
