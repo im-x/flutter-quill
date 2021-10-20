@@ -12,6 +12,7 @@ import 'nodes/block.dart';
 import 'nodes/container.dart';
 import 'nodes/embed.dart';
 import 'nodes/line.dart';
+import 'nodes/leaf.dart';
 import 'nodes/node.dart';
 import 'style.dart';
 
@@ -252,6 +253,8 @@ class Document {
   }
 
   String toPlainText() => _root.children.map((e) => e.toPlainText()).join();
+
+  String toRawString() => _root.children.map((e) => e.toRawText()).join();
 
   void _loadDocument(Delta doc) {
     if (doc.isEmpty) {

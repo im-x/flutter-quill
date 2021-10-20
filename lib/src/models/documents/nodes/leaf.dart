@@ -218,6 +218,9 @@ class Text extends Leaf {
 
   @override
   String toPlainText() => value;
+
+  @override
+  String toRawText() => value;
 }
 
 /// An embed node inside of a line in a Quill document.
@@ -248,5 +251,13 @@ class Embed extends Leaf {
   /// // Embed nodes are represented as unicode object replacement character in
   // plain text.
   @override
-  String toPlainText() => value.toString();
+  String toPlainText() => kObjectReplacementCharacter;
+
+  @override
+  String toString() {
+    return value.toString();
+  }
+
+  @override
+  String toRawText() => value.toString();
 }

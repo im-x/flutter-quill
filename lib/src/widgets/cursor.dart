@@ -247,26 +247,69 @@ class CursorPainter {
   /// Paints cursor on [canvas] at specified [position].
   /// [offset] is global top left (x, y) of text line
   /// [position] is relative (x) in text line
-  void paint(Canvas canvas, Offset offset, TextPosition position) {
-    final caretOffset = getCaretOffset(position);
-    var caretRect = prototype.shift(caretOffset + offset);
+  void paint(
+      Canvas canvas, Offset offset, TextPosition position, bool lineHasEmbed) {
+    // relative (x, y) to global offset
+    var relativeCaretOffset = editable!.getOffsetForCaret(position, prototype);
+    if (lineHasEmbed) {
+      relativeCaretOffset = getCaretOffset(position);
+      // relativeCaretOffset = editable!.getOffsetForCaret(
+      //     TextPosition(
+      //         offset: position.offset - 1, affinity: position.affinity),
+      //     prototype);
+      // // Hardcoded 6 as estimate of the width of a character
+      // relativeCaretOffset =
+      //     Offset(relativeCaretOffset.dx + 6, relativeCaretOffset.dy);
+    }
 
+    final caretOffset = relativeCaretOffset + offset;
+    var caretRect = prototype.shift(caretOffset);
     if (style.offset != null) {
       caretRect = caretRect.shift(style.offset!);
     }
 
     if (caretRect.left < 0.0) {
+      // For iOS the cursor may get clipped by the scroll view when
+      // it's located at a beginning of a line. We ensure that this
+      // does not happen here. This may result in the cursor being painted
+      // closer to the character on the right, but it's arguably better
+      // then painting clipped cursor (or even cursor completely hidden).
       caretRect = caretRect.shift(Offset(-caretRect.left, 0));
     }
 
-    var left = caretRect.left;
-    if (left > 0) left = caretRect.left - 1.0;
+    final caretHeight = editable!.getFullHeightForCaret(position);
+    if (caretHeight != null) {
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+        case TargetPlatform.fuchsia:
+        case TargetPlatform.linux:
+        case TargetPlatform.windows:
+          // Override the height to take the full height of the glyph at the
+          // TextPosition when not on iOS. iOS has special handling that
+          // creates a taller caret.
+          caretRect = Rect.fromLTWH(
+            caretRect.left,
+            caretRect.top - 2.0,
+            caretRect.width,
+            caretHeight,
+          );
+          break;
+        case TargetPlatform.iOS:
+        case TargetPlatform.macOS:
+          // Center the caret vertically along the text.
+          caretRect = Rect.fromLTWH(
+            caretRect.left,
+            caretRect.top + (caretHeight - caretRect.height) / 2,
+            caretRect.width,
+            caretRect.height,
+          );
+          break;
+        default:
+          throw UnimplementedError();
+      }
+    }
 
-    caretRect =
-        Rect.fromLTWH(left, caretRect.top, caretRect.width, caretRect.height);
-
-    final pixelPerfectOffset = _getPixelPerfectCursorOffset_old(
-        editable!, caretRect, devicePixelRatio);
+    final pixelPerfectOffset = _getPixelPerfectCursorOffset(caretRect);
     if (!pixelPerfectOffset.isFinite) {
       return;
     }
@@ -309,40 +352,20 @@ class CursorPainter {
     }
     result = result ?? editable!.getOffsetForCaret(position, prototype);
 
-    final dy = result.dy;
-    final count = dy / QuillData.cursorHeight;
-    if (dy < 0 || count < 0.5) {
-      result = result.translate(0, -dy);
-    } else {
-      final floor = count.floor();
-      if (count > floor) {
-        final addLine = count - floor > 0.5;
-        final lineCount = floor + (addLine ? 1 : 0);
-        final realDy = lineCount * QuillData.cursorHeight;
-        result = result.translate(0, -(dy - realDy));
-      }
-    }
+    // final dy = result.dy;
+    // final count = dy / QuillData.cursorHeight;
+    // if (dy < 0 || count < 0.5) {
+    //   result = result.translate(0, -dy);
+    // } else {
+    //   final floor = count.floor();
+    //   if (count > floor) {
+    //     final addLine = count - floor > 0.5;
+    //     final lineCount = floor + (addLine ? 1 : 0);
+    //     final realDy = lineCount * QuillData.cursorHeight;
+    //     result = result.translate(0, -(dy - realDy));
+    //   }
+    // }
     return result;
-  }
-
-  Offset _getPixelPerfectCursorOffset_old(
-    RenderContentProxyBox editable,
-    Rect caretRect,
-    double devicePixelRatio,
-  ) {
-    final caretPosition = editable.localToGlobal(caretRect.topLeft);
-    final pixelMultiple = 1.0 / devicePixelRatio;
-
-    final pixelPerfectOffsetX = caretPosition.dx.isFinite
-        ? (caretPosition.dx / pixelMultiple).round() * pixelMultiple -
-            caretPosition.dx
-        : caretPosition.dx;
-    final pixelPerfectOffsetY = caretPosition.dy.isFinite
-        ? (caretPosition.dy / pixelMultiple).round() * pixelMultiple -
-            caretPosition.dy
-        : caretPosition.dy;
-
-    return Offset(pixelPerfectOffsetX, pixelPerfectOffsetY);
   }
 
   Offset _getPixelPerfectCursorOffset(
