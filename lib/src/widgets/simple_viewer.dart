@@ -347,6 +347,7 @@ class _SimpleViewer extends MultiChildRenderObjectWidget {
       startHandleLayerLink,
       endHandleLayerLink,
       const EdgeInsets.fromLTRB(4, 4, 4, 5),
+      isViewer: true,
     );
   }
 

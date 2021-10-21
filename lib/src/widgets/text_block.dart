@@ -290,17 +290,13 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
     List<RenderEditableBox>? children,
     ImageConfiguration configuration = ImageConfiguration.empty,
     EdgeInsets contentPadding = EdgeInsets.zero,
+    bool isViewer = false,
   })  : _decoration = decoration,
         _configuration = configuration,
         _savedPadding = padding,
         _contentPadding = contentPadding,
-        super(
-          children,
-          block,
-          textDirection,
-          scrollBottomInset,
-          padding.add(contentPadding),
-        );
+        super(children, block, textDirection, scrollBottomInset,
+            padding.add(contentPadding), isViewer);
 
   EdgeInsetsGeometry _savedPadding;
   EdgeInsets _contentPadding;

@@ -717,23 +717,25 @@ typedef TextSelectionChangedHandler = void Function(
 class RenderEditor extends RenderEditableContainerBox
     implements RenderAbstractEditor {
   RenderEditor(
-    List<RenderEditableBox>? children,
-    TextDirection textDirection,
-    double scrollBottomInset,
-    EdgeInsetsGeometry padding,
-    this.document,
-    this.selection,
-    this._hasFocus,
-    this.onSelectionChanged,
-    this._startHandleLayerLink,
-    this._endHandleLayerLink,
-    EdgeInsets floatingCursorAddedMargin,
-  ) : super(
+      List<RenderEditableBox>? children,
+      TextDirection textDirection,
+      double scrollBottomInset,
+      EdgeInsetsGeometry padding,
+      this.document,
+      this.selection,
+      this._hasFocus,
+      this.onSelectionChanged,
+      this._startHandleLayerLink,
+      this._endHandleLayerLink,
+      EdgeInsets floatingCursorAddedMargin,
+      {bool isViewer = false})
+      : super(
           children,
           document.root,
           textDirection,
           scrollBottomInset,
           padding,
+          isViewer,
         );
 
   Document document;
@@ -1131,6 +1133,7 @@ class RenderEditableContainerBox extends RenderBox
     this.textDirection,
     this.scrollBottomInset,
     this._padding,
+    this.isViewer,
   ) : assert(_padding.isNonNegative) {
     addAll(children);
   }
@@ -1140,6 +1143,7 @@ class RenderEditableContainerBox extends RenderBox
   EdgeInsetsGeometry _padding;
   double scrollBottomInset;
   EdgeInsets? _resolvedPadding;
+  bool isViewer;
 
   container_node.Container getContainer() {
     return _container;
@@ -1253,6 +1257,17 @@ class RenderEditableContainerBox extends RenderBox
     }
     mainAxisExtent += _resolvedPadding!.bottom;
     size = constraints.constrain(Size(constraints.maxWidth, mainAxisExtent));
+
+    if (isViewer) {
+      final width = _getIntrinsicCrossAxis((child) {
+        final childHeight = math.max<double>(
+            0, size.height - _resolvedPadding!.top + _resolvedPadding!.bottom);
+        return child.getMaxIntrinsicWidth(childHeight) +
+            _resolvedPadding!.left +
+            _resolvedPadding!.right;
+      });
+      size = constraints.constrain(Size(width, mainAxisExtent));
+    }
 
     assert(size.isFinite);
   }
