@@ -120,7 +120,7 @@ mixin RawEditorStateKeyboardMixin on EditorState {
     }
   }
 
-  void handleDelete(bool forward) {
+  void handleDelete(bool forward, {bool ignoreFocus = false}) {
     final selection = widget.controller.selection;
     final plainText = getTextEditingValue().text;
     var cursorPosition = selection.start;
@@ -146,6 +146,7 @@ mixin RawEditorStateKeyboardMixin on EditorState {
       size,
       '',
       newSelection,
+      ignoreFocus: ignoreFocus,
     );
   }
 

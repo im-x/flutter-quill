@@ -48,6 +48,8 @@ class QuillController extends ChangeNotifier {
   /// removing or listeners to this instance.
   bool _isDisposed = false;
 
+  void Function(bool forward, {bool ignoreFocus})? _deleteHandler;
+
   Stream<QuillChange> get changes => document.changes;
 
   TextEditingValue get plainTextEditingValue => TextEditingValue(
@@ -214,6 +216,17 @@ class QuillController extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void addDeleteHandler(
+      void Function(bool forward, {bool ignoreFocus})? handler) {
+    _deleteHandler = handler;
+  }
+
+  void handleDelete(bool forward, {bool ignoreFocus = false}) {
+    if (_deleteHandler != null) {
+      _deleteHandler!(forward, ignoreFocus: ignoreFocus);
+    }
   }
 
   @override

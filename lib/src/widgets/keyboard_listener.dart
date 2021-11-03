@@ -7,7 +7,7 @@ enum InputShortcut { CUT, COPY, PASTE, SELECT_ALL }
 typedef CursorMoveCallback = void Function(
     LogicalKeyboardKey key, bool wordModifier, bool lineModifier, bool shift);
 typedef InputShortcutCallback = void Function(InputShortcut? shortcut);
-typedef OnDeleteCallback = void Function(bool forward);
+typedef OnDeleteCallback = void Function(bool forward, {bool ignoreFocus});
 
 class KeyboardEventHandler {
   KeyboardEventHandler(this.onCursorMove, this.onShortcut, this.onDelete);
@@ -97,9 +97,9 @@ class KeyboardEventHandler {
     } else if (isShortcutModifierPressed && _shortcutKeys.contains(key)) {
       onShortcut(_keyToShortcut[key]);
     } else if (key == LogicalKeyboardKey.delete) {
-      onDelete(true);
+      onDelete(true, ignoreFocus: false);
     } else if (key == LogicalKeyboardKey.backspace) {
-      onDelete(false);
+      onDelete(false, ignoreFocus: false);
     } else {
       return KeyEventResult.ignored;
     }

@@ -336,6 +336,7 @@ class RawEditorState extends EditorState
     widget.controller.addListener(() {
       _didChangeTextEditingValue(widget.controller.ignoreFocusOnTextChange);
     });
+    widget.controller.addDeleteHandler(handleDelete);
 
     _scrollController = widget.scrollController;
     _scrollController.addListener(_updateSelectionOverlayForScroll);
@@ -485,9 +486,7 @@ class RawEditorState extends EditorState
 
   void _onChangeTextEditingValue([bool ignoreCaret = false]) {
     updateRemoteValueIfNeeded();
-    if (ignoreCaret) {
-      return;
-    }
+
     _showCaretOnScreen();
     _cursorCont.startOrStopCursorTimerIfNeeded(
         _hasFocus, widget.controller.selection);
@@ -496,7 +495,15 @@ class RawEditorState extends EditorState
         ..stopCursorTimer(resetCharTicks: false)
         ..startCursorTimer();
     }
-
+    if (ignoreCaret) {
+      if (mounted) {
+        setState(() {
+          // Use widget.controller.value in build()
+          // Trigger build and updateChildren
+        });
+      }
+      return;
+    }
     SchedulerBinding.instance!.addPostFrameCallback((_) {
       if (!mounted) {
         return;

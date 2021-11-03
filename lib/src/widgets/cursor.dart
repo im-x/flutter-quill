@@ -287,12 +287,12 @@ class CursorPainter {
           // Override the height to take the full height of the glyph at the
           // TextPosition when not on iOS. iOS has special handling that
           // creates a taller caret.
-          caretRect = Rect.fromLTWH(
-            caretRect.left,
-            caretRect.top - 2.0,
-            caretRect.width,
-            caretHeight,
-          );
+          // caretRect = Rect.fromLTWH(
+          //   caretRect.left,
+          //   caretRect.top - 2.0,
+          //   caretRect.width,
+          //   caretHeight,
+          // );
           break;
         case TargetPlatform.iOS:
         case TargetPlatform.macOS:
