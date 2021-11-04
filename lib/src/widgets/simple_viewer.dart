@@ -123,6 +123,7 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
             videoUrl: videoUrl, context: context, readOnly: readOnly);
       case 'emoji':
       case 'mention':
+      case 'topic':
         return (node.value as InlineEmbed).getEmbedWidget();
       default:
         throw UnimplementedError(

@@ -77,6 +77,12 @@ class InlineEmbed extends Embeddable {
   static InlineEmbed mention(Map<int, String> info) =>
       InlineEmbed(mentionName, info);
 
+  static const topicName = 'topic';
+  static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
+  static String getTopicHtml(String name) {
+    return '[#$name#]';
+  }
+
   Widget getEmbedWidget() {
     return QuillData.getInlineEmbedWidget?.call(this) ??
         const SizedBox.shrink();
@@ -93,6 +99,8 @@ class InlineEmbed extends Embeddable {
     } else if (type == mentionName) {
       final map = data as Map<int, String>;
       return '@${map.values.first}';
+    } else if (type == topicName) {
+      return '#${data.toString()}#';
     } else {
       return '';
     }

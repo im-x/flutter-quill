@@ -170,7 +170,9 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
         if (nodes.isEmpty) {
           matches.forEach((m) {
             matchStarts.add(m.start);
-            indexes..add(m.start)..add(m.end);
+            indexes
+              ..add(m.start)
+              ..add(m.end);
           });
           indexes.add(text.length);
 
@@ -257,6 +259,8 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
                 htmlBuffer!.write('[@${map.keys.last}:${map.values.last}]');
               }
             }
+          } else if (inline.type == InlineEmbed.topicName) {
+            htmlBuffer!.write('[#${(node.value as InlineEmbed).data}#]');
           }
         }
       } else {
@@ -433,7 +437,7 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
       {Map<String, dynamic>? attributes}) {
     final texts = <String>[];
 
-    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]');
+    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]');
     final matches = reg.allMatches(text);
     if (matches.isNotEmpty) {
       splitTextByMatches(text, matches, texts);
@@ -455,6 +459,10 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
           final emojiName = item.substring(2, item.length - 1);
           delta.insert(InlineEmbed.emoji(emojiName));
           continue;
+        } else if (item.startsWith('[#') && item.endsWith('#]')) {
+          final topicName = item.substring(2, item.length - 2);
+          delta.insert(InlineEmbed.topic(topicName));
+          continue;
         }
       }
       delta.insert(item, attributes);
@@ -464,7 +472,9 @@ class _DeltaHtmlDecoder extends Converter<String, Delta> {
   void splitTextByMatches(
       String text, Iterable<RegExpMatch> atMatches, List<String> texts) {
     final indexes = <int>[0];
-    atMatches.forEach((m) => indexes..add(m.start)..add(m.end));
+    atMatches.forEach((m) => indexes
+      ..add(m.start)
+      ..add(m.end));
     indexes.add(text.length);
 
     for (var i = 0; i <= indexes.length - 2; i++) {
