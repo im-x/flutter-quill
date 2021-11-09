@@ -349,6 +349,11 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool showListBullets = true,
       bool showIndent = true,
       bool showLink = true,
+      Color? fillColor,
+      Widget Function(BuildContext, Attribute<dynamic>, IconData, Color?, bool?,
+              void Function()?,
+              [double])
+          childBuilder = defaultToggleStyleButtonBuilder,
       Widget? externalPre}) {
     return QuillToolbar(
       key: key,
@@ -366,6 +371,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             attribute: Attribute.bold,
             icon: Icons.format_bold,
             controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
           ),
         ),
         const SizedBox(width: 0.6),
@@ -375,6 +382,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             attribute: Attribute.italic,
             icon: Icons.format_italic,
             controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
           ),
         ),
         const SizedBox(width: 0.6),
@@ -384,6 +393,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             attribute: Attribute.strikeThrough,
             icon: Icons.format_strikethrough,
             controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
           ),
         ),
         const SizedBox(width: 0.6),
@@ -405,6 +416,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             attribute: Attribute.ol,
             controller: controller,
             icon: Icons.format_list_numbered,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
           ),
         ),
         Visibility(
@@ -413,6 +426,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             attribute: Attribute.ul,
             controller: controller,
             icon: Icons.format_list_bulleted,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
           ),
         ),
         Visibility(
