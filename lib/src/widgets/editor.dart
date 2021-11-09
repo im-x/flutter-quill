@@ -283,6 +283,7 @@ class QuillEditor extends StatefulWidget {
     bool? expand,
     ValueChanged<String>? onSubmitted,
     bool? isSimpleInput,
+    DefaultStyles? customStyles,
   }) {
     return QuillEditor(
       controller: controller,
@@ -298,6 +299,7 @@ class QuillEditor extends StatefulWidget {
       maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
       onSubmitted: onSubmitted,
       isSimpleInput: isSimpleInput,
+      customStyles: customStyles,
     );
   }
 
