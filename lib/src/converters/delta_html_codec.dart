@@ -282,7 +282,7 @@ class _DeltaHtmlEncoder extends Converter<Delta, String> {
         htmlBuffer!.write('<$tag style="$str">');
       } else if (tag == kLink && styles.containsKey(kLink)) {
         final str = styles[kLink];
-        htmlBuffer!.write('<$tag href="$str">');
+        htmlBuffer!.write('<$tag href="$str" target="_blank">');
       }
     }
   }
