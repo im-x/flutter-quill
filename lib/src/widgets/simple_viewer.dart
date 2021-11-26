@@ -2,13 +2,17 @@ import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_quill/src/models/documents/nodes/embed.dart';
 import 'package:string_validator/string_validator.dart';
 import 'package:tuple/tuple.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../models/documents/nodes/embed.dart' show InlineEmbed;
+import '../../widgets/text_selection.dart'
+    show EditorTextSelectionGestureDetector;
 import '../models/documents/attribute.dart';
 import '../models/documents/document.dart';
 import '../models/documents/nodes/block.dart';
@@ -37,6 +41,8 @@ class QuillSimpleViewer extends StatefulWidget {
     this.scrollBottomInset = 0,
     this.padding = EdgeInsets.zero,
     this.embedBuilder,
+    this.onLaunchUrl,
+    this.enableInteractiveSelection = true,
     Key? key,
   })  : assert(truncate ||
             ((truncateScale == null) &&
@@ -56,6 +62,8 @@ class QuillSimpleViewer extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final EmbedBuilder? embedBuilder;
   final bool readOnly;
+  final void Function(String)? onLaunchUrl;
+  final bool enableInteractiveSelection;
 
   @override
   _QuillSimpleViewerState createState() => _QuillSimpleViewerState();
@@ -63,6 +71,7 @@ class QuillSimpleViewer extends StatefulWidget {
 
 class _QuillSimpleViewerState extends State<QuillSimpleViewer>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<EditorState> _editorKey = GlobalKey<EditorState>();
   late DefaultStyles _styles;
   final LayerLink _toolbarLayerLink = LayerLink();
   final LayerLink _startHandleLayerLink = LayerLink();
@@ -156,6 +165,7 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
       link: _toolbarLayerLink,
       child: Semantics(
         child: _SimpleViewer(
+          key: _editorKey,
           document: _doc,
           textDirection: _textDirection,
           startHandleLayerLink: _startHandleLayerLink,
@@ -194,7 +204,58 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
       }
     }
 
-    return QuillStyles(data: _styles, child: child);
+    return EditorTextSelectionGestureDetector(
+      onSingleTapUp: _onSingleTapUp,
+      behavior: HitTestBehavior.translucent,
+      child: QuillStyles(data: _styles, child: child),
+    );
+  }
+
+  RenderEditor? getRenderEditor() {
+    return _editorKey.currentContext?.findRenderObject() as RenderEditor?;
+  }
+
+  bool _onSingleTapUp(TapUpDetails details) {
+    if (widget.controller.document.isEmpty()) {
+      return false;
+    }
+    final pos = getRenderEditor()!.getPositionForOffset(details.globalPosition);
+    final result = widget.controller.document.queryChild(pos.offset);
+    if (result.node == null) {
+      return false;
+    }
+    final line = result.node as Line;
+    final segmentResult = line.queryChild(result.offset, false);
+    if (segmentResult.node == null) {
+      if (line.length == 1) {
+        widget.controller.updateSelection(
+            TextSelection.collapsed(offset: pos.offset), ChangeSource.LOCAL);
+        return true;
+      }
+      return false;
+    }
+    final segment = segmentResult.node as leaf.Leaf;
+    if (segment.style.containsKey(Attribute.link.key)) {
+      String? link = segment.style.attributes[Attribute.link.key]!.value;
+      if (widget.readOnly && link != null) {
+        link = link.trim();
+        if (!linkPrefixes
+            .any((linkPrefix) => link!.toLowerCase().startsWith(linkPrefix))) {
+          link = 'https://$link';
+        }
+        if (widget.onLaunchUrl != null) {
+          widget.onLaunchUrl!(link);
+        } else {}
+
+        _launchUrl(link);
+      }
+      return false;
+    }
+    return false;
+  }
+
+  Future<void> _launchUrl(String url) async {
+    await launch(url);
   }
 
   List<Widget> _buildChildren(Document doc, BuildContext context) {
