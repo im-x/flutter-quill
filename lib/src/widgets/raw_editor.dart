@@ -650,6 +650,7 @@ class RawEditorState extends EditorState
         value.selection,
       );
     } else {
+      final value = textEditingValue;
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       if (data != null) {
         final length =
