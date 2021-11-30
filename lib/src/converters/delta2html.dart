@@ -30,7 +30,6 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
 
   @override
   String convert(Delta input) {
-    print(input);
     htmlBuffer = StringBuffer();
     try {
       Document.fromDelta(input).root.children.forEach(_parseNode);
