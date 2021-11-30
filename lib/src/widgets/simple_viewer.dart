@@ -43,6 +43,7 @@ class QuillSimpleViewer extends StatefulWidget {
     this.embedBuilder,
     this.onLaunchUrl,
     this.enableInteractiveSelection = true,
+    this.selectionColor = Colors.blue,
     Key? key,
   })  : assert(truncate ||
             ((truncateScale == null) &&
@@ -64,6 +65,7 @@ class QuillSimpleViewer extends StatefulWidget {
   final bool readOnly;
   final void Function(String)? onLaunchUrl;
   final bool enableInteractiveSelection;
+  final Color selectionColor;
 
   @override
   _QuillSimpleViewerState createState() => _QuillSimpleViewerState();
@@ -273,9 +275,9 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
             scrollBottomInset: widget.scrollBottomInset,
             verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
             textSelection: widget.controller.selection,
-            color: Colors.black,
+            color: widget.selectionColor,
             styles: _styles,
-            enableInteractiveSelection: false,
+            enableInteractiveSelection: true,
             hasFocus: false,
             contentPadding: attrs.containsKey(Attribute.codeBlock.key)
                 ? const EdgeInsets.all(16)
@@ -314,21 +316,19 @@ class _QuillSimpleViewerState extends State<QuillSimpleViewer>
       readOnly: widget.readOnly,
     );
     final editableTextLine = EditableTextLine(
-        node,
-        null,
-        textLine,
-        0,
-        _getVerticalSpacingForLine(node, _styles),
-        _textDirection,
-        widget.controller.selection,
-        Colors.black,
-        //widget.selectionColor,
-        false,
-        //enableInteractiveSelection,
-        false,
-        //_hasFocus,
-        MediaQuery.of(context).devicePixelRatio,
-        _cursorCont);
+      node,
+      null,
+      textLine,
+      0,
+      _getVerticalSpacingForLine(node, _styles),
+      _textDirection,
+      widget.controller.selection,
+      widget.selectionColor,
+      true,
+      false,
+      MediaQuery.of(context).devicePixelRatio,
+      _cursorCont,
+    );
     return editableTextLine;
   }
 

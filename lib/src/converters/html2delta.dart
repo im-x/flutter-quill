@@ -26,7 +26,6 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
             (delta.last.data as String).endsWith('\n'))) {
       delta = _appendNewLine(delta);
     }
-    print(delta);
     return delta;
   }
 
