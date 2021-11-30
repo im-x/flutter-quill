@@ -98,12 +98,20 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           return delta..insert('\n');
         } else {
           for (var i = 0; i < nodes.length; i++) {
+            var currentNode = nodes[i];
             delta = _parseNode(
-              nodes[i],
+              currentNode,
               delta,
               parentAttributes: attributes,
               parentBlockAttributes: blockAttributes,
             );
+
+            if (element.className != '' &&
+                element.className.startsWith('ql-indent-')) {
+              int indent =
+                  int.parse(element.className.replaceAll('ql-indent-', ''));
+              delta..insert('\n', {'indent': indent});
+            }
           }
           if (delta.isEmpty ||
               !(delta.last.data is String &&

@@ -115,11 +115,12 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
     } else if (node.style.containsSame(Attribute.blockQuote)) {
       tag = kQuote;
     } else {
-      throw UnsupportedError('Unsupported BlockNode: $node');
+      tag = '';
+      // throw UnsupportedError('Unsupported BlockNode: $node');
     }
-    _writeTag(tag);
+    if (tag != '') _writeTag(tag);
     node.children.cast<Line>().forEach(_parseLineNode);
-    _writeTag(tag, close: true);
+    if (tag != '') _writeTag(tag, close: true);
   }
 
   void _parseLeafNode(Leaf node) {
