@@ -98,7 +98,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           return delta..insert('\n');
         } else {
           for (var i = 0; i < nodes.length; i++) {
-            var currentNode = nodes[i];
+            final currentNode = nodes[i];
             delta = _parseNode(
               currentNode,
               delta,
@@ -108,9 +108,9 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
 
             if (element.className != '' &&
                 element.className.startsWith('ql-indent-')) {
-              int indent =
+              final indent =
                   int.parse(element.className.replaceAll('ql-indent-', ''));
-              delta..insert('\n', {'indent': indent});
+              delta.insert('\n', {'indent': indent});
             }
           }
           if (delta.isEmpty ||
