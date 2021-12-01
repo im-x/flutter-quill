@@ -105,10 +105,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
               parentBlockAttributes: blockAttributes,
             );
 
-            if (element.className != '' &&
-                element.className.startsWith('ql-indent-')) {
-              final indent =
-                  int.parse(element.className.replaceAll('ql-indent-', ''));
+            final indent = getIndentFromClassName(element.className);
+            if (indent > 0) {
               delta.insert('\n', {'indent': indent});
             }
           }
@@ -238,9 +236,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
         blockAttributes[Attribute.h3.key] = Attribute.h3.value;
       }
 
-      if (element.className != '' &&
-          element.className.startsWith('ql-indent-')) {
-        int indent = int.parse(element.className.replaceAll('ql-indent-', ''));
+      final indent = getIndentFromClassName(element.className);
+      if (indent > 0) {
         blockAttributes[Attribute.indent.key] = indent;
       }
 
@@ -345,6 +342,21 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       }
       return delta;
     }
+  }
+
+  int getIndentFromClassName(String className) {
+    if (className != '' && className.startsWith('ql-indent-')) {
+      try {
+        if (className.contains(' ')) {
+          className = className.split(' ')[0];
+        }
+        final indent = int.parse(className.replaceAll('ql-indent-', ''));
+        return indent;
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
   }
 
   final Map<String, _HtmlType> _supportedHTMLElements = {
