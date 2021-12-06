@@ -80,7 +80,7 @@ class InlineEmbed extends Embeddable {
   static const topicName = 'topic';
   static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
   static String getTopicHtml(String name) {
-    return '[#$name#]';
+    return '<p>[#$name#]</p>';
   }
 
   Widget getEmbedWidget() {
