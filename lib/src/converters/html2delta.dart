@@ -321,11 +321,10 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           element.text,
           attributes: attributes,
         );
-        if (attributes['a'] != null) {
+        if (attributes[Attribute.link.key] != null) {
           // It's a link
-          if (inList == null || !inList) {
-            delta.insert('\n');
-          }
+          delta.insert(' ');
+          attributes.clear();
         }
       } else {
         // The element has child elements(subclass of node) and potentially
