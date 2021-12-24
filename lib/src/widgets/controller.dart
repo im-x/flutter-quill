@@ -32,7 +32,6 @@ class QuillController extends ChangeNotifier {
     final index = delta.transformPosition(delta.length - 1);
     updateSelection(TextSelection(baseOffset: index, extentOffset: index),
         ChangeSource.LOCAL);
-    notifyListeners();
   }
 
   /// Tells whether to keep or reset the [toggledStyle]

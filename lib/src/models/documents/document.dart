@@ -179,9 +179,9 @@ class Document {
       throw '_delta compose failed';
     }
 
-    if (_delta != _root.toDelta()) {
-      throw 'Compose failed';
-    }
+    // if (_delta != _root.toDelta()) {
+    //   throw 'Compose failed';
+    // }
 
     final change = QuillChange(originalDelta, delta, changeSource);
     _observer.add(change);
