@@ -25,7 +25,15 @@ class QuillController extends ChangeNotifier {
   }
 
   /// Document managed by this controller.
-  final Document document;
+  Document document;
+  void updateDocument(Document d) {
+    document = d;
+    final delta = d.toDelta();
+    final index = delta.transformPosition(delta.length - 1);
+    updateSelection(TextSelection(baseOffset: index, extentOffset: index),
+        ChangeSource.LOCAL);
+    notifyListeners();
+  }
 
   /// Tells whether to keep or reset the [toggledStyle]
   /// when user adds a new line.
