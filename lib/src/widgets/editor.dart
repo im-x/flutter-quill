@@ -284,6 +284,7 @@ class QuillEditor extends StatefulWidget {
     ValueChanged<String>? onSubmitted,
     bool? isSimpleInput,
     DefaultStyles? customStyles,
+    ScrollPhysics? scrollPhysics,
   }) {
     return QuillEditor(
       controller: controller,
@@ -294,6 +295,7 @@ class QuillEditor extends StatefulWidget {
       focusNode: focusNode,
       padding: EdgeInsets.zero,
       placeholder: placeholder,
+      scrollPhysics: scrollPhysics,
       scrollController: ScrollController(),
       minHeight: expand == true ? null : QuillData.cursorHeight * 1,
       maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
