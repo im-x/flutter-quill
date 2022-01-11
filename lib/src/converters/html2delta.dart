@@ -166,9 +166,13 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       if (item.length > 3) {
         if (item.startsWith('[@') && item.endsWith(']')) {
           final splitStrings = item.substring(2, item.length - 1).split(':');
-          final userID = int.tryParse(splitStrings[0]);
-          final userName = splitStrings[1];
-          delta.insert(InlineEmbed.mention({userID!: userName}));
+          try {
+            final userID = int.tryParse(splitStrings[0]);
+            final userName = splitStrings[1];
+            delta.insert(InlineEmbed.mention({userID!: userName}));
+          } catch (e) {
+            delta.insert(item, attributes);
+          }
           continue;
         } else if (item.startsWith('[:') && item.endsWith(']')) {
           final emojiName = item.substring(2, item.length - 1);
