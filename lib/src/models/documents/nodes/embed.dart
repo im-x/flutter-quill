@@ -83,6 +83,12 @@ class InlineEmbed extends Embeddable {
     return '<p>[#$name#]</p>';
   }
 
+  static const editName = 'edited';
+  static InlineEmbed edit(String name) => InlineEmbed(editName, name);
+  static String getEditHtml(String name) {
+    return '[%$name%]';
+  }
+
   Widget getEmbedWidget() {
     return QuillData.getInlineEmbedWidget?.call(this) ??
         const SizedBox.shrink();

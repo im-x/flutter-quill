@@ -152,7 +152,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       {Map<String, dynamic>? attributes}) {
     final texts = <String>[];
 
-    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]');
+    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]');
     final matches = reg.allMatches(text);
     if (matches.isNotEmpty) {
       splitTextByMatches(text, matches, texts);
@@ -177,6 +177,10 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
         } else if (item.startsWith('[#') && item.endsWith('#]')) {
           final topicName = item.substring(2, item.length - 2);
           delta.insert(InlineEmbed.topic(topicName));
+          continue;
+        } else if (item.startsWith('[%') && item.endsWith('%]')) {
+          final editName = item.substring(2, item.length - 2);
+          delta.insert(InlineEmbed.edit(editName));
           continue;
         }
       }

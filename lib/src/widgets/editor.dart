@@ -218,6 +218,8 @@ Widget _defaultEmbedBuilder(
       return VideoApp(videoUrl: videoUrl, context: context, readOnly: readOnly);
     case 'emoji':
     case 'mention':
+    case 'topic':
+    case 'edited':
       return (node.value as InlineEmbed).getEmbedWidget();
     default:
       throw UnimplementedError(
