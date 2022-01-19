@@ -158,3 +158,53 @@ class EnsureEmbedLineRule extends DeleteRule {
       ..delete(len! + lengthDelta);
   }
 }
+
+class DeleteBlockEmbedRule extends DeleteRule {
+  const DeleteBlockEmbedRule();
+
+  @override
+  Delta? applyRule(Delta document, int index,
+      {int? len, Object? data, Attribute? attribute}) {
+    if (index == 0) return null;
+
+    final prev = DeltaIterator(document).skip(index + len! - 1);
+    final cur = DeltaIterator(document).skip(index + len);
+    final next = DeltaIterator(document).skip(index + len + 1);
+
+    if (next != null && next.data is! String) {
+      if (next.data is Map &&
+          (next.data as Map).containsKey('type') &&
+          (next.data as Map)['type'] == 'InlineEmbed') {
+        return null;
+      }
+
+      //删除顶格
+      var offset = 0;
+      if (cur?.data is String) {
+        final p = cur!.data as String;
+        if (p.length == 2 && p.endsWith('\n')) offset++;
+      }
+
+      return Delta()
+        ..retain(index - 1)
+        ..delete(len + offset);
+    }
+
+    if (prev != null && prev.data is! String) {
+      if (prev.data is Map &&
+          (prev.data as Map).containsKey('type') &&
+          (prev.data as Map)['type'] == 'InlineEmbed') {
+        return null;
+      }
+
+      //移除前后的空格
+      var offset = 1;
+      if (document.elementAt(0) != prev) offset++;
+
+      return Delta()
+        ..retain(index - offset)
+        ..delete(len + offset);
+    }
+    return null;
+  }
+}

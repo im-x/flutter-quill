@@ -136,7 +136,9 @@ class _TextLineState extends State<TextLine> {
     if (widget.line.hasEmbed && widget.line.childCount == 1) {
       // For video, it is always single child
       final embed = widget.line.children.single as Embed;
-      return EmbedProxy(widget.embedBuilder(context, embed, widget.readOnly));
+      if (embed.value is BlockEmbed) {
+        return EmbedProxy(widget.embedBuilder(context, embed, widget.readOnly));
+      }
     }
     final textSpan = _getTextSpanForWholeLine(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);

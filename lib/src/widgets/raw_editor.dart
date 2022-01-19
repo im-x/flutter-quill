@@ -658,9 +658,7 @@ class RawEditorState extends EditorState
 
   void _onChangeTextEditingValue([bool ignoreCaret = false]) {
     updateRemoteValueIfNeeded();
-    if (ignoreCaret) {
-      return;
-    }
+
     _showCaretOnScreen();
     _cursorCont.startOrStopCursorTimerIfNeeded(
         _hasFocus, widget.controller.selection);
@@ -671,7 +669,15 @@ class RawEditorState extends EditorState
         ..stopCursorTimer(resetCharTicks: false)
         ..startCursorTimer();
     }
-
+    if (ignoreCaret) {
+      if (mounted) {
+        setState(() {
+          // Use widget.controller.value in build()
+          // Trigger build and updateChildren
+        });
+      }
+      return;
+    }
     // Refresh selection overlay after the build step had a chance to
     // update and register all children of RenderEditor. Otherwise this will
     // fail in situations where a new line of text is entered, which adds

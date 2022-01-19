@@ -179,9 +179,9 @@ class Document {
       throw '_delta compose failed';
     }
 
-    if (_delta != _root.toDelta()) {
-      throw 'Compose failed';
-    }
+    // if (_delta != _root.toDelta()) {
+    //   throw 'Compose failed';
+    // }
     final change = Tuple3(originalDelta, delta, changeSource);
     _observer.add(change);
     _history.handleDocChange(change);

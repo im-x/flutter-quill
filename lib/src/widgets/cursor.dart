@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'box.dart';
+import 'proxy.dart';
 
 /// Style properties of editing cursor.
 class CursorStyle {
@@ -260,14 +261,8 @@ class CursorPainter {
       Canvas canvas, Offset offset, TextPosition position, bool lineHasEmbed) {
     // relative (x, y) to global offset
     var relativeCaretOffset = editable!.getOffsetForCaret(position, prototype);
-    if (lineHasEmbed && relativeCaretOffset == Offset.zero) {
-      relativeCaretOffset = editable!.getOffsetForCaret(
-          TextPosition(
-              offset: position.offset - 1, affinity: position.affinity),
-          prototype);
-      // Hardcoded 6 as estimate of the width of a character
-      relativeCaretOffset =
-          Offset(relativeCaretOffset.dx + 6, relativeCaretOffset.dy);
+    if (lineHasEmbed) {
+      relativeCaretOffset = getCaretOffset(position);
     }
 
     final caretOffset = relativeCaretOffset + offset;
@@ -330,6 +325,35 @@ class CursorPainter {
       final caretRRect = RRect.fromRectAndRadius(caretRect, style.radius!);
       canvas.drawRRect(caretRRect, paint);
     }
+  }
+
+  Offset getCaretOffset(TextPosition position) {
+    Offset? result;
+    if (editable is RenderParagraphProxy) {
+      var offset = position.offset;
+      final child = (editable as RenderParagraphProxy).child;
+
+      if (offset <= 0) offset = 1;
+      final boxes = child!.getBoxesForSelection(
+        TextSelection(
+          baseOffset: offset - 1,
+          extentOffset: offset,
+          affinity: position.affinity,
+        ),
+      );
+
+      if (boxes.isNotEmpty) {
+        final rect = boxes.toList().last.toRect();
+        result = rect.topLeft;
+        if (position.offset <= 0) {
+          result = rect.topLeft;
+        } else {
+          result = rect.topRight;
+        }
+      }
+    }
+    result = result ?? editable!.getOffsetForCaret(position, prototype);
+    return result;
   }
 
   Offset _getPixelPerfectCursorOffset(

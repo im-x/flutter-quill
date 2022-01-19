@@ -37,7 +37,7 @@ class Rules {
     const FormatLinkAtCaretPositionRule(),
     const ResolveLineFormatRule(),
     const ResolveInlineFormatRule(),
-    const InsertEmbedsRule(),
+    // const InsertEmbedsRule(),
     const AutoExitBlockRule(),
     const PreserveBlockStyleOnInsertRule(),
     const PreserveLineStyleOnSplitRule(),
@@ -48,6 +48,7 @@ class Rules {
     const CatchAllInsertRule(),
     const EnsureEmbedLineRule(),
     const PreserveLineStyleOnMergeRule(),
+    const DeleteBlockEmbedRule(),
     const CatchAllDeleteRule(),
     const EnsureLastLineBreakDeleteRule()
   ]);

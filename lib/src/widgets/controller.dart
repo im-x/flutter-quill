@@ -107,6 +107,12 @@ class QuillController extends ChangeNotifier {
     }
   }
 
+  void undoIgnoreFocus() {
+    ignoreFocusOnTextChange = true;
+    undo();
+    ignoreFocusOnTextChange = false;
+  }
+
   void _handleHistoryChange(int? len) {
     if (len! != 0) {
       // if (this.selection.extentOffset >= document.length) {
