@@ -109,6 +109,8 @@ abstract class Node extends LinkedListEntry<Node> {
 
   String toPlainText();
 
+  String toRawText();
+
   Delta toDelta();
 
   void insert(int index, Object data, Style? style);

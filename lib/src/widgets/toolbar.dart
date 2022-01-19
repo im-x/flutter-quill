@@ -420,6 +420,131 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  factory QuillToolbar.input(
+      {required QuillController controller,
+      Key? key,
+      bool showBoldButton = true,
+      bool showItalicButton = true,
+      bool showStrikeThrough = true,
+      bool showClearFormat = true,
+      bool showListNumbers = true,
+      bool showListBullets = true,
+      bool showIndent = true,
+      bool showLink = true,
+      Color? fillColor,
+      Widget Function(
+        BuildContext context,
+        Attribute<dynamic> attribute,
+        IconData icon,
+        Color? fillColor,
+        bool? isToggled,
+        void Function()? onPressed, [
+        double iconSize,
+        QuillIconTheme? iconTheme,
+      ])
+          childBuilder = defaultToggleStyleButtonBuilder,
+      Widget? externalPre}) {
+    return QuillToolbar(
+      key: key,
+      children: [
+        if (externalPre != null) externalPre,
+        if (externalPre != null)
+          VerticalDivider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey.shade400,
+          ),
+        Visibility(
+          visible: showBoldButton,
+          child: ToggleStyleButton(
+            attribute: Attribute.bold,
+            icon: Icons.format_bold,
+            controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showItalicButton,
+          child: ToggleStyleButton(
+            attribute: Attribute.italic,
+            icon: Icons.format_italic,
+            controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showStrikeThrough,
+          child: ToggleStyleButton(
+            attribute: Attribute.strikeThrough,
+            icon: Icons.format_strikethrough,
+            controller: controller,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
+          ),
+        ),
+        const SizedBox(width: 0.6),
+        Visibility(
+          visible: showClearFormat,
+          child: ClearFormatButton(
+            icon: Icons.format_clear,
+            controller: controller,
+          ),
+        ),
+        VerticalDivider(
+          indent: 16,
+          endIndent: 16,
+          color: Colors.grey.shade400,
+        ),
+        Visibility(
+          visible: showListNumbers,
+          child: ToggleStyleButton(
+            attribute: Attribute.ol,
+            controller: controller,
+            icon: Icons.format_list_numbered,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
+          ),
+        ),
+        Visibility(
+          visible: showListBullets,
+          child: ToggleStyleButton(
+            attribute: Attribute.ul,
+            controller: controller,
+            icon: Icons.format_list_bulleted,
+            fillColor: fillColor,
+            childBuilder: childBuilder,
+          ),
+        ),
+        Visibility(
+          visible: showLink,
+          child: LinkStyleButton(controller: controller),
+        ),
+        Visibility(
+          visible: showIndent,
+          child: IndentButton(
+            icon: Icons.format_indent_increase,
+            iconSize: kDefaultIconSize,
+            controller: controller,
+            isIncrease: true,
+          ),
+        ),
+        Visibility(
+          visible: showIndent,
+          child: IndentButton(
+            icon: Icons.format_indent_decrease,
+            iconSize: kDefaultIconSize,
+            controller: controller,
+            isIncrease: false,
+          ),
+        ),
+      ],
+    );
+  }
+
   final List<Widget> children;
   final double toolbarHeight;
   final double toolbarSectionSpacing;

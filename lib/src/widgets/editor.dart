@@ -8,12 +8,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/src/models/documents/nodes/embed.dart';
 import 'package:string_validator/string_validator.dart';
 
 import '../models/documents/document.dart';
 import '../models/documents/nodes/container.dart' as container_node;
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/line.dart';
+import '../utils/quill_data.dart';
 import '../utils/string_helper.dart';
 import 'box.dart';
 import 'controller.dart';
@@ -229,6 +231,11 @@ Widget defaultEmbedBuilder(
             videoUrl: videoUrl, context: context, readOnly: readOnly);
       }
       return VideoApp(videoUrl: videoUrl, context: context, readOnly: readOnly);
+    case 'emoji':
+    case 'mention':
+    case 'topic':
+    case 'edited':
+      return (node.value as InlineEmbed).getEmbedWidget();
     default:
       throw UnimplementedError(
         'Embeddable type "${node.value.type}" is not supported by default '
@@ -270,6 +277,7 @@ class QuillEditor extends StatefulWidget {
       this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
       this.customStyleBuilder,
       this.floatingCursorDisabled = false,
+      this.isSimpleInput,
       Key? key})
       : super(key: key);
 
@@ -288,6 +296,34 @@ class QuillEditor extends StatefulWidget {
       expands: false,
       padding: EdgeInsets.zero,
       keyboardAppearance: keyboardAppearance ?? Brightness.light,
+    );
+  }
+
+  factory QuillEditor.input({
+    required QuillController controller,
+    required FocusNode focusNode,
+    String? placeholder,
+    bool? expand,
+    ValueChanged<String>? onSubmitted,
+    bool? isSimpleInput,
+    DefaultStyles? customStyles,
+    ScrollPhysics? scrollPhysics,
+  }) {
+    return QuillEditor(
+      controller: controller,
+      expands: expand ?? false,
+      readOnly: false,
+      autoFocus: false,
+      scrollable: true,
+      focusNode: focusNode,
+      padding: EdgeInsets.zero,
+      placeholder: placeholder,
+      scrollPhysics: scrollPhysics,
+      scrollController: ScrollController(),
+      minHeight: expand == true ? null : QuillData.cursorHeight * 1,
+      maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
+      isSimpleInput: isSimpleInput,
+      customStyles: customStyles,
     );
   }
 
@@ -455,6 +491,7 @@ class QuillEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
 
   final bool floatingCursorDisabled;
+  final bool? isSimpleInput;
 
   @override
   _QuillEditorState createState() => _QuillEditorState();
@@ -841,6 +878,7 @@ class RenderEditor extends RenderEditableContainerBox
     EdgeInsets floatingCursorAddedMargin =
         const EdgeInsets.fromLTRB(4, 4, 4, 5),
     double? maxContentWidth,
+    bool readOnly = false,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
         _startHandleLayerLink = startHandleLayerLink,
@@ -853,6 +891,7 @@ class RenderEditor extends RenderEditableContainerBox
           textDirection,
           scrollBottomInset,
           padding,
+          readOnly,
         );
 
   final CursorCont _cursorController;
@@ -1279,7 +1318,16 @@ class RenderEditor extends RenderEditableContainerBox
     }
     mainAxisExtent += resolvedPadding!.bottom;
     size = constraints.constrain(Size(constraints.maxWidth, mainAxisExtent));
-
+    if (readOnly) {
+      final width = _getIntrinsicCrossAxis((child) {
+        final childHeight = math.max<double>(
+            0, size.height - _resolvedPadding!.top + _resolvedPadding!.bottom);
+        return child.getMaxIntrinsicWidth(childHeight) +
+            _resolvedPadding!.left +
+            _resolvedPadding!.right;
+      });
+      size = constraints.constrain(Size(width, mainAxisExtent));
+    }
     assert(size.isFinite);
   }
 
@@ -1666,6 +1714,7 @@ class RenderEditableContainerBox extends RenderBox
     this.textDirection,
     this.scrollBottomInset,
     this._padding,
+    this.readOnly,
   ) : assert(_padding.isNonNegative) {
     addAll(children);
   }
@@ -1675,6 +1724,7 @@ class RenderEditableContainerBox extends RenderBox
   EdgeInsetsGeometry _padding;
   double scrollBottomInset;
   EdgeInsets? _resolvedPadding;
+  bool readOnly;
 
   container_node.Container get container => _container;
 
@@ -1790,6 +1840,17 @@ class RenderEditableContainerBox extends RenderBox
     }
     mainAxisExtent += _resolvedPadding!.bottom;
     size = constraints.constrain(Size(constraints.maxWidth, mainAxisExtent));
+
+    if (readOnly) {
+      final width = _getIntrinsicCrossAxis((child) {
+        final childHeight = math.max<double>(
+            0, size.height - _resolvedPadding!.top + _resolvedPadding!.bottom);
+        return child.getMaxIntrinsicWidth(childHeight) +
+            _resolvedPadding!.left +
+            _resolvedPadding!.right;
+      });
+      size = constraints.constrain(Size(width, mainAxisExtent));
+    }
 
     assert(size.isFinite);
   }

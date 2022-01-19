@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:tuple/tuple.dart';
-
+import '../../converters/delta_html_codec.dart';
 import '../quill_delta.dart';
 import '../rules/rule.dart';
 import 'attribute.dart';
@@ -25,6 +26,18 @@ class Document {
 
   Document.fromDelta(Delta delta) : _delta = delta {
     _loadDocument(delta);
+  }
+
+  Document.fromHtml(String html) : _delta = _transform(htmlDecode(html)) {
+    _loadDocument(_delta);
+  }
+
+  String toJson() {
+    return jsonEncode(_delta.toJson());
+  }
+
+  String toHtml() {
+    return htmlEncode(_delta);
   }
 
   /// The root node of the document tree
@@ -239,6 +252,8 @@ class Document {
   }
 
   String toPlainText() => _root.children.map((e) => e.toPlainText()).join();
+
+  String toRawString() => _root.children.map((e) => e.toRawText()).join();
 
   void _loadDocument(Delta doc) {
     if (doc.isEmpty) {

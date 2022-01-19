@@ -51,14 +51,22 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       _lastKnownRemoteTextEditingValue = textEditingValue;
       _textInputConnection = TextInput.attach(
         this,
-        TextInputConfiguration(
-          inputType: TextInputType.multiline,
-          readOnly: widget.readOnly,
-          inputAction: TextInputAction.newline,
-          enableSuggestions: !widget.readOnly,
-          keyboardAppearance: widget.keyboardAppearance,
-          textCapitalization: widget.textCapitalization,
-        ),
+        (widget.isSimpleInput != null && widget.isSimpleInput! == true)
+            ? TextInputConfiguration(
+                readOnly: widget.readOnly,
+                inputAction: TextInputAction.send,
+                enableSuggestions: !widget.readOnly,
+                keyboardAppearance: widget.keyboardAppearance,
+                textCapitalization: widget.textCapitalization,
+              )
+            : TextInputConfiguration(
+                inputType: TextInputType.multiline,
+                readOnly: widget.readOnly,
+                inputAction: TextInputAction.newline,
+                enableSuggestions: !widget.readOnly,
+                keyboardAppearance: widget.keyboardAppearance,
+                textCapitalization: widget.textCapitalization,
+              ),
       );
 
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);

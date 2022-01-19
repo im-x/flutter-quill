@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import '../../../utils/quill_data.dart';
+
 /// An object which can be embedded into a Quill document.
 ///
 /// See also:
@@ -13,15 +16,22 @@ class Embeddable {
   final dynamic data;
 
   Map<String, dynamic> toJson() {
-    final m = <String, String>{type: data};
-    return m;
+    return {'type': runtimeType.toString(), type: data};
+  }
+
+  String toString() {
+    throw "Impl by Child";
   }
 
   static Embeddable fromJson(Map<String, dynamic> json) {
-    final m = Map<String, dynamic>.from(json);
-    assert(m.length == 1, 'Embeddable map must only have one key');
+    assert(json.length == 2, 'Embeddable map need two key');
 
-    return BlockEmbed(m.keys.first, m.values.first);
+    if (json['type'] == 'BlockEmbed') {
+      return BlockEmbed(json.keys.last, json.values.last);
+    } else if (json['type'] == 'InlineEmbed') {
+      return InlineEmbed(json.keys.last, json.values.last);
+    }
+    throw ArgumentError('Not Support Argument ${json.toString()}');
   }
 }
 
@@ -42,4 +52,50 @@ class BlockEmbed extends Embeddable {
 
   static const String videoType = 'video';
   static BlockEmbed video(String videoUrl) => BlockEmbed(videoType, videoUrl);
+}
+
+class InlineEmbed extends Embeddable {
+  InlineEmbed(String type, Object data) : super(type, data);
+
+  static const emojiName = 'emoji';
+  static InlineEmbed emoji(String name) => InlineEmbed(emojiName, name);
+
+  static const mentionName = 'mention';
+  static InlineEmbed mention(Map<int, String> info) =>
+      InlineEmbed(mentionName, info);
+
+  static const topicName = 'topic';
+  static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
+  static String getTopicHtml(String name) {
+    return '<p>[#$name#]</p>';
+  }
+
+  static const editName = 'edited';
+  static InlineEmbed edit(String name) => InlineEmbed(editName, name);
+  static String getEditHtml(String name) {
+    return '[%$name%]';
+  }
+
+  Widget getEmbedWidget() {
+    return QuillData.getInlineEmbedWidget?.call(this) ??
+        const SizedBox.shrink();
+  }
+
+  bool onTap() {
+    return QuillData.onInlineEmbedTap?.call(this) == true;
+  }
+
+  @override
+  String toString() {
+    if (type == emojiName) {
+      return '[:${data.toString()}]';
+    } else if (type == mentionName) {
+      final map = data as Map<int, String>;
+      return '@${map.values.first}';
+    } else if (type == topicName) {
+      return '#${data.toString()}#';
+    } else {
+      return '';
+    }
+  }
 }

@@ -32,43 +32,44 @@ import 'text_line.dart';
 import 'text_selection.dart';
 
 class RawEditor extends StatefulWidget {
-  const RawEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollBottomInset,
-      required this.cursorStyle,
-      required this.selectionColor,
-      required this.selectionCtrls,
-      Key? key,
-      this.scrollable = true,
-      this.padding = EdgeInsets.zero,
-      this.readOnly = false,
-      this.placeholder,
-      this.onLaunchUrl,
-      this.toolbarOptions = const ToolbarOptions(
-        copy: true,
-        cut: true,
-        paste: true,
-        selectAll: true,
-      ),
-      this.showSelectionHandles = false,
-      bool? showCursor,
-      this.textCapitalization = TextCapitalization.none,
-      this.maxHeight,
-      this.minHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.expands = false,
-      this.autoFocus = false,
-      this.keyboardAppearance = Brightness.light,
-      this.enableInteractiveSelection = true,
-      this.scrollPhysics,
-      this.embedBuilder = defaultEmbedBuilder,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.floatingCursorDisabled = false})
-      : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
+  const RawEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollBottomInset,
+    required this.cursorStyle,
+    required this.selectionColor,
+    required this.selectionCtrls,
+    Key? key,
+    this.scrollable = true,
+    this.padding = EdgeInsets.zero,
+    this.readOnly = false,
+    this.placeholder,
+    this.onLaunchUrl,
+    this.toolbarOptions = const ToolbarOptions(
+      copy: true,
+      cut: true,
+      paste: true,
+      selectAll: true,
+    ),
+    this.showSelectionHandles = false,
+    bool? showCursor,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxHeight,
+    this.minHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.expands = false,
+    this.autoFocus = false,
+    this.keyboardAppearance = Brightness.light,
+    this.enableInteractiveSelection = true,
+    this.scrollPhysics,
+    this.embedBuilder = defaultEmbedBuilder,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.floatingCursorDisabled = false,
+    this.isSimpleInput,
+  })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
@@ -217,6 +218,7 @@ class RawEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
   final CustomStyleBuilder? customStyleBuilder;
   final bool floatingCursorDisabled;
+  final bool? isSimpleInput;
 
   @override
   State<StatefulWidget> createState() => RawEditorState();
@@ -293,6 +295,7 @@ class RawEditorState extends EditorState
           padding: widget.padding,
           maxContentWidth: widget.maxContentWidth,
           floatingCursorDisabled: widget.floatingCursorDisabled,
+          readOnly: widget.readOnly,
           children: _buildChildren(_doc, context),
         ),
       ),
@@ -331,6 +334,7 @@ class RawEditorState extends EditorState
               maxContentWidth: widget.maxContentWidth,
               cursorController: _cursorCont,
               floatingCursorDisabled: widget.floatingCursorDisabled,
+              readOnly: widget.readOnly,
               children: _buildChildren(_doc, context),
             ),
           ),
@@ -937,6 +941,7 @@ class _Editor extends MultiChildRenderObjectWidget {
     this.padding = EdgeInsets.zero,
     this.maxContentWidth,
     this.offset,
+    this.readOnly = false,
   }) : super(key: key, children: children);
 
   final ViewportOffset? offset;
@@ -953,24 +958,27 @@ class _Editor extends MultiChildRenderObjectWidget {
   final double? maxContentWidth;
   final CursorCont cursorController;
   final bool floatingCursorDisabled;
+  final bool readOnly;
 
   @override
   RenderEditor createRenderObject(BuildContext context) {
     return RenderEditor(
-        offset: offset,
-        document: document,
-        textDirection: textDirection,
-        hasFocus: hasFocus,
-        selection: selection,
-        startHandleLayerLink: startHandleLayerLink,
-        endHandleLayerLink: endHandleLayerLink,
-        onSelectionChanged: onSelectionChanged,
-        onSelectionCompleted: onSelectionCompleted,
-        cursorController: cursorController,
-        padding: padding,
-        maxContentWidth: maxContentWidth,
-        scrollBottomInset: scrollBottomInset,
-        floatingCursorDisabled: floatingCursorDisabled);
+      offset: offset,
+      document: document,
+      textDirection: textDirection,
+      hasFocus: hasFocus,
+      selection: selection,
+      startHandleLayerLink: startHandleLayerLink,
+      endHandleLayerLink: endHandleLayerLink,
+      onSelectionChanged: onSelectionChanged,
+      onSelectionCompleted: onSelectionCompleted,
+      cursorController: cursorController,
+      padding: padding,
+      maxContentWidth: maxContentWidth,
+      scrollBottomInset: scrollBottomInset,
+      floatingCursorDisabled: floatingCursorDisabled,
+      readOnly: readOnly,
+    );
   }
 
   @override

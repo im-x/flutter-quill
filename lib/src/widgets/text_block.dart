@@ -93,13 +93,15 @@ class EditableTextBlock extends StatelessWidget {
 
     final defaultStyles = QuillStyles.getStyles(context, false);
     return _EditableBlock(
-        block,
-        textDirection,
-        verticalSpacing as Tuple2<double, double>,
-        scrollBottomInset,
-        _getDecorationForBlock(block, defaultStyles) ?? const BoxDecoration(),
-        contentPadding,
-        _buildChildren(context, indentLevelCounts));
+      block,
+      textDirection,
+      verticalSpacing as Tuple2<double, double>,
+      scrollBottomInset,
+      _getDecorationForBlock(block, defaultStyles) ?? const BoxDecoration(),
+      contentPadding,
+      _buildChildren(context, indentLevelCounts),
+      readOnly,
+    );
   }
 
   BoxDecoration? _getDecorationForBlock(
@@ -296,6 +298,7 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
     List<RenderEditableBox>? children,
     ImageConfiguration configuration = ImageConfiguration.empty,
     EdgeInsets contentPadding = EdgeInsets.zero,
+    bool readOnly = false,
   })  : _decoration = decoration,
         _configuration = configuration,
         _savedPadding = padding,
@@ -306,6 +309,7 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
           textDirection,
           scrollBottomInset,
           padding.add(contentPadding),
+          readOnly,
         );
 
   EdgeInsetsGeometry _savedPadding;
@@ -577,14 +581,15 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
 
 class _EditableBlock extends MultiChildRenderObjectWidget {
   _EditableBlock(
-      this.block,
-      this.textDirection,
-      this.padding,
-      this.scrollBottomInset,
-      this.decoration,
-      this.contentPadding,
-      List<Widget> children)
-      : super(children: children);
+    this.block,
+    this.textDirection,
+    this.padding,
+    this.scrollBottomInset,
+    this.decoration,
+    this.contentPadding,
+    List<Widget> children,
+    this.readOnly,
+  ) : super(children: children);
 
   final Block block;
   final TextDirection textDirection;
@@ -592,6 +597,7 @@ class _EditableBlock extends MultiChildRenderObjectWidget {
   final double scrollBottomInset;
   final Decoration decoration;
   final EdgeInsets? contentPadding;
+  final bool readOnly;
 
   EdgeInsets get _padding =>
       EdgeInsets.only(top: padding.item1, bottom: padding.item2);
@@ -607,6 +613,7 @@ class _EditableBlock extends MultiChildRenderObjectWidget {
       scrollBottomInset: scrollBottomInset,
       decoration: decoration,
       contentPadding: _contentPadding,
+      readOnly: readOnly,
     );
   }
 
@@ -619,6 +626,7 @@ class _EditableBlock extends MultiChildRenderObjectWidget {
       ..scrollBottomInset = scrollBottomInset
       ..setPadding(_padding)
       ..decoration = decoration
-      ..contentPadding = _contentPadding;
+      ..contentPadding = _contentPadding
+      ..readOnly = readOnly;
   }
 }
