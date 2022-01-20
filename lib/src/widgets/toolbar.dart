@@ -431,6 +431,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool showListBullets = true,
       bool showIndent = true,
       bool showLink = true,
+      bool multiRowsDisplay = false,
       Color? fillColor,
       Widget Function(
         BuildContext context,
@@ -446,6 +447,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       Widget? externalPre}) {
     return QuillToolbar(
       key: key,
+      multiRowsDisplay: multiRowsDisplay,
       children: [
         if (externalPre != null) externalPre,
         if (externalPre != null)
