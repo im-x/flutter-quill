@@ -598,6 +598,7 @@ class _QuillEditorState extends State<QuillEditor>
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
+      isSimpleInput: widget.isSimpleInput,
     );
 
     return _selectionGestureDetectorBuilder.build(
