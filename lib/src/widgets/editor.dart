@@ -277,6 +277,7 @@ class QuillEditor extends StatefulWidget {
       this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
       this.customStyleBuilder,
       this.floatingCursorDisabled = false,
+      this.onSubmitted,
       this.isSimpleInput,
       Key? key})
       : super(key: key);
@@ -324,6 +325,7 @@ class QuillEditor extends StatefulWidget {
       maxHeight: expand == true ? null : QuillData.cursorHeight * 4,
       isSimpleInput: isSimpleInput,
       customStyles: customStyles,
+      onSubmitted: onSubmitted,
     );
   }
 
@@ -491,6 +493,8 @@ class QuillEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
 
   final bool floatingCursorDisabled;
+
+  final ValueChanged<String>? onSubmitted;
   final bool? isSimpleInput;
 
   @override
@@ -598,6 +602,7 @@ class _QuillEditorState extends State<QuillEditor>
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
+      onSubmitted: widget.onSubmitted,
       isSimpleInput: widget.isSimpleInput,
     );
 

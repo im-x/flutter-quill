@@ -68,6 +68,7 @@ class RawEditor extends StatefulWidget {
     this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
     this.customStyleBuilder,
     this.floatingCursorDisabled = false,
+    this.onSubmitted,
     this.isSimpleInput,
   })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
@@ -218,6 +219,8 @@ class RawEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
   final CustomStyleBuilder? customStyleBuilder;
   final bool floatingCursorDisabled;
+
+  final ValueChanged<String>? onSubmitted;
   final bool? isSimpleInput;
 
   @override
