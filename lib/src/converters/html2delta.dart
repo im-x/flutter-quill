@@ -101,8 +101,9 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
             delta = _parseNode(
               currentNode,
               delta,
-              parentAttributes: attributes,
-              parentBlockAttributes: blockAttributes,
+              parentAttributes: parentAttributes ?? <String, dynamic>{},
+              parentBlockAttributes:
+                  parentBlockAttributes ?? <String, dynamic>{},
             );
 
             final indent = getIndentFromClassName(element.className);
@@ -128,8 +129,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           element,
           delta,
           inList: inList,
-          parentAttributes: attributes,
-          parentBlockAttributes: blockAttributes,
+          parentAttributes: parentAttributes ?? <String, dynamic>{},
+          parentBlockAttributes: parentBlockAttributes ?? <String, dynamic>{},
         );
         return delta;
       }
@@ -139,7 +140,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       _insertText(
         delta,
         text.text,
-        attributes: attributes,
+        attributes: parentAttributes ?? <String, dynamic>{},
       );
       return delta;
     } else {
