@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/documents/nodes/embed.dart';
+import '../models/documents/nodes/embeddable.dart';
 
 class QuillData {
   static double chatFontSizeScale = 1.3;

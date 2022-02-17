@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import '../../flutter_quill.dart';
 import 'text_selection.dart';
 
-typedef EmbedBuilder = Widget Function(
-    BuildContext context, Embed node, bool readOnly);
+typedef EmbedBuilder = Widget Function(BuildContext context,
+    QuillController controller, Embed node, bool readOnly);
 
 typedef CustomStyleBuilder = TextStyle Function(Attribute attribute);
 
@@ -300,6 +300,11 @@ class EditorTextSelectionGestureDetectorBuilder {
     renderEditor!.handleDragEnd(details);
   }
 
+  @protected
+  void onLongPress() {
+    editor?.showToolbar();
+  }
+
   /// Returns a [EditorTextSelectionGestureDetector] configured with
   /// the handlers provided by this builder.
   ///
@@ -320,6 +325,7 @@ class EditorTextSelectionGestureDetectorBuilder {
       onDragSelectionStart: onDragSelectionStart,
       onDragSelectionUpdate: onDragSelectionUpdate,
       onDragSelectionEnd: onDragSelectionEnd,
+      onLongPress: onLongPress,
       behavior: behavior,
       child: child,
     );

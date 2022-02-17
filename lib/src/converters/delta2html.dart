@@ -5,10 +5,9 @@ import 'dart:convert';
 
 import 'package:quiver/strings.dart';
 import '../../flutter_quill.dart';
-import '../../models/documents/nodes/block.dart';
-import '../../models/documents/nodes/node.dart';
-import '../../models/documents/style.dart';
+import '../models/documents/nodes/block.dart';
 import '../models/documents/nodes/line.dart';
+import '../models/documents/nodes/node.dart';
 
 /// Delta -> HTML
 class Delta2HtmlEncoder extends Converter<Delta, String> {

@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../../utils/diff_delta.dart';
+import '../../models/documents/document.dart';
+import '../../models/documents/nodes/leaf.dart';
+import '../../utils/delta.dart';
 import '../editor.dart';
 
 mixin RawEditorStateSelectionDelegateMixin on EditorState
@@ -19,23 +21,47 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
     final oldText = widget.controller.document.toPlainText();
     final newText = value.text;
     final diff = getDiff(oldText, newText, cursorPosition);
+    if (diff.deleted == '' && diff.inserted == '') {
+      // Only changing selection range
+      widget.controller.updateSelection(value.selection, ChangeSource.LOCAL);
+      return;
+    }
+
     final insertedText = _adjustInsertedText(diff.inserted);
 
     widget.controller.replaceText(
         diff.start, diff.deleted.length, insertedText, value.selection);
+
+    _applyPasteStyle(insertedText, diff.start);
+  }
+
+  void _applyPasteStyle(String insertedText, int start) {
+    if (insertedText == pastePlainText && pastePlainText != '') {
+      final pos = start;
+      for (var i = 0; i < pasteStyle.length; i++) {
+        final offset = pasteStyle[i].item1;
+        final style = pasteStyle[i].item2;
+        widget.controller.formatTextStyle(
+            pos + offset,
+            i == pasteStyle.length - 1
+                ? pastePlainText.length - offset
+                : pasteStyle[i + 1].item1,
+            style);
+      }
+    }
   }
 
   String _adjustInsertedText(String text) {
-    // For clip from editor, it may contain image, a.k.a 65532.
+    // For clip from editor, it may contain image, a.k.a 65532 or '\uFFFC'.
     // For clip from browser, image is directly ignore.
     // Here we skip image when pasting.
-    if (!text.codeUnits.contains(65532)) {
+    if (!text.codeUnits.contains(Embed.kObjectReplacementInt)) {
       return text;
     }
 
     final sb = StringBuffer();
     for (var i = 0; i < text.length; i++) {
-      if (text.codeUnitAt(i) == 65532) {
+      if (text.codeUnitAt(i) == Embed.kObjectReplacementInt) {
         continue;
       }
       sb.write(text[i]);
@@ -48,7 +74,9 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
     final localRect = renderEditor.getLocalRectForCaret(position);
     final targetOffset = _getOffsetToRevealCaret(localRect, position);
 
-    scrollController.jumpTo(targetOffset.offset);
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(targetOffset.offset);
+    }
     renderEditor.showOnScreen(rect: targetOffset.rect);
   }
 
@@ -62,7 +90,9 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
   // `renderEditable.preferredLineHeight`, before the target scroll offset is
   // calculated.
   RevealedOffset _getOffsetToRevealCaret(Rect rect, TextPosition position) {
-    if (!scrollController.position.allowImplicitScrolling) {
+    // Make sure scrollController is attached
+    if (scrollController.hasClients &&
+        !scrollController.position.allowImplicitScrolling) {
       return RevealedOffset(offset: scrollController.offset, rect: rect);
     }
 
@@ -87,12 +117,17 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
 
     // No overscrolling when encountering tall fonts/scripts that extend past
     // the ascent.
-    final targetOffset = (additionalOffset + scrollController.offset).clamp(
-      scrollController.position.minScrollExtent,
-      scrollController.position.maxScrollExtent,
-    );
+    var targetOffset = additionalOffset;
+    if (scrollController.hasClients) {
+      targetOffset = (additionalOffset + scrollController.offset).clamp(
+        scrollController.position.minScrollExtent,
+        scrollController.position.maxScrollExtent,
+      );
+    }
 
-    final offsetDelta = scrollController.offset - targetOffset;
+    final offsetDelta =
+        (scrollController.hasClients ? scrollController.offset : 0) -
+            targetOffset;
     return RevealedOffset(
         rect: rect.shift(unitOffset * offsetDelta), offset: targetOffset);
   }

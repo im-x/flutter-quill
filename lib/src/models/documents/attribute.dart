@@ -12,6 +12,7 @@ enum AttributeScope {
 class Attribute<T> {
   Attribute(this.key, this.scope, this.value);
 
+  /// Unique key of this attribute.
   final String key;
   final AttributeScope scope;
   final T value;
@@ -87,6 +88,14 @@ class Attribute<T> {
   static final TokenAttribute token = TokenAttribute('');
 
   static final ScriptAttribute script = ScriptAttribute('');
+
+  static const String mobileWidth = 'mobileWidth';
+
+  static const String mobileHeight = 'mobileHeight';
+
+  static const String mobileMargin = 'mobileMargin';
+
+  static const String mobileAlignment = 'mobileAlignment';
 
   static final Set<String> inlineKeys = {
     Attribute.bold.key,

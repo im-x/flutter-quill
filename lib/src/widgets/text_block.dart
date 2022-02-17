@@ -93,15 +93,15 @@ class EditableTextBlock extends StatelessWidget {
 
     final defaultStyles = QuillStyles.getStyles(context, false);
     return _EditableBlock(
-      block,
-      textDirection,
-      verticalSpacing as Tuple2<double, double>,
-      scrollBottomInset,
-      _getDecorationForBlock(block, defaultStyles) ?? const BoxDecoration(),
-      contentPadding,
-      _buildChildren(context, indentLevelCounts),
-      readOnly,
-    );
+        block: block,
+        textDirection: textDirection,
+        padding: verticalSpacing as Tuple2<double, double>,
+        scrollBottomInset: scrollBottomInset,
+        decoration: _getDecorationForBlock(block, defaultStyles) ??
+            const BoxDecoration(),
+        contentPadding: contentPadding,
+        readOnly: readOnly,
+        children: _buildChildren(context, indentLevelCounts));
   }
 
   BoxDecoration? _getDecorationForBlock(
@@ -296,21 +296,19 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
     required double scrollBottomInset,
     required Decoration decoration,
     List<RenderEditableBox>? children,
-    ImageConfiguration configuration = ImageConfiguration.empty,
     EdgeInsets contentPadding = EdgeInsets.zero,
     bool readOnly = false,
   })  : _decoration = decoration,
-        _configuration = configuration,
+        _configuration = ImageConfiguration(textDirection: textDirection),
         _savedPadding = padding,
         _contentPadding = contentPadding,
         super(
-          children,
-          block,
-          textDirection,
-          scrollBottomInset,
-          padding.add(contentPadding),
-          readOnly,
-        );
+            children: children,
+            container: block,
+            textDirection: textDirection,
+            scrollBottomInset: scrollBottomInset,
+            padding: padding.add(contentPadding),
+            readOnly: readOnly);
 
   EdgeInsetsGeometry _savedPadding;
   EdgeInsets _contentPadding;
@@ -374,7 +372,7 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
 
   @override
   TextPosition getPositionForOffset(Offset offset) {
-    final child = childAtOffset(offset)!;
+    final child = childAtOffset(offset);
     final parentData = child.parentData as BoxParentData;
     final localPosition =
         child.getPositionForOffset(offset - parentData.offset);
@@ -581,15 +579,16 @@ class RenderEditableTextBlock extends RenderEditableContainerBox
 
 class _EditableBlock extends MultiChildRenderObjectWidget {
   _EditableBlock(
-    this.block,
-    this.textDirection,
-    this.padding,
-    this.scrollBottomInset,
-    this.decoration,
-    this.contentPadding,
-    List<Widget> children,
-    this.readOnly,
-  ) : super(children: children);
+      {required this.block,
+      required this.textDirection,
+      required this.padding,
+      required this.scrollBottomInset,
+      required this.decoration,
+      required this.contentPadding,
+      required List<Widget> children,
+      required this.readOnly,
+      Key? key})
+      : super(key: key, children: children);
 
   final Block block;
   final TextDirection textDirection;

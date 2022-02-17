@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
+import '../models/documents/attribute.dart';
+
 Map<String, String> parseKeyValuePairs(String s, Set<String> targetKeys) {
   final result = <String, String>{};
   final pairs = s.split(';');
@@ -15,6 +17,31 @@ Map<String, String> parseKeyValuePairs(String s, Set<String> targetKeys) {
   }
 
   return result;
+}
+
+String replaceStyleString(String s, double width, double height) {
+  final result = <String, String>{};
+  final pairs = s.split(';');
+  for (final pair in pairs) {
+    final _index = pair.indexOf(':');
+    if (_index < 0) {
+      continue;
+    }
+    final _key = pair.substring(0, _index).trim();
+    result[_key] = pair.substring(_index + 1).trim();
+  }
+
+  result[Attribute.mobileWidth] = width.toString();
+  result[Attribute.mobileHeight] = height.toString();
+  final sb = StringBuffer();
+  for (final pair in result.entries) {
+    sb
+      ..write(pair.key)
+      ..write(': ')
+      ..write(pair.value)
+      ..write('; ');
+  }
+  return sb.toString();
 }
 
 Alignment getAlignment(String? s) {
