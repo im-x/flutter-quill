@@ -927,6 +927,10 @@ class RawEditorState extends EditorState
         SelectionChangedCause.toolbar,
       );
       // }
+
+      if (widget.readOnly) {
+        _selectionOverlay?.hideHandles();
+      }
     }
   }
 
