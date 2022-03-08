@@ -419,6 +419,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool multiRowsDisplay = false,
       bool showDividers = true,
       Color? fillColor,
+      Color? color,
       Widget Function(
         BuildContext context,
         Attribute<dynamic> attribute,
@@ -434,6 +435,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     return QuillToolbar(
       key: key,
       multiRowsDisplay: multiRowsDisplay,
+      color: color,
       children: [
         if (externalPre != null) externalPre,
         if (externalPre != null && showDividers)
