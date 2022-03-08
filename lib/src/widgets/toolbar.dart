@@ -417,6 +417,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool showIndent = true,
       bool showLink = true,
       bool multiRowsDisplay = false,
+      bool showDividers = true,
       Color? fillColor,
       Widget Function(
         BuildContext context,
@@ -435,7 +436,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       multiRowsDisplay: multiRowsDisplay,
       children: [
         if (externalPre != null) externalPre,
-        if (externalPre != null)
+        if (externalPre != null && showDividers)
           VerticalDivider(
             indent: 16,
             endIndent: 16,
@@ -481,11 +482,12 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             controller: controller,
           ),
         ),
-        VerticalDivider(
-          indent: 16,
-          endIndent: 16,
-          color: Colors.grey.shade400,
-        ),
+        if (showDividers)
+          VerticalDivider(
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey.shade400,
+          ),
         Visibility(
           visible: showListNumbers,
           child: ToggleStyleButton(
