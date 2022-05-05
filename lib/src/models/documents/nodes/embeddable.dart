@@ -19,13 +19,13 @@ class Embeddable {
     return {'type': runtimeType.toString(), type: data};
   }
 
+  @override
   String toString() {
     throw "Impl by Child";
   }
 
   static Embeddable fromJson(Map<String, dynamic> json) {
     assert(json.length == 2, 'Embeddable map need two key');
-
     if (json['type'] == 'BlockEmbed') {
       return BlockEmbed(json.keys.last, json.values.last);
     } else if (json['type'] == 'InlineEmbed') {

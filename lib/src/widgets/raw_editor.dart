@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -19,6 +18,7 @@ import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/line.dart';
 import '../models/documents/nodes/node.dart';
 import '../models/documents/style.dart';
+import '../utils/delta.dart';
 import '../utils/platform.dart';
 import 'controller.dart';
 import 'cursor.dart';
@@ -443,7 +443,8 @@ class RawEditorState extends EditorState
     for (final node in doc.root.children) {
       if (node is Line) {
         final editableTextLine = _getEditableTextLineFromNode(node, context);
-        result.add(editableTextLine);
+        result.add(Directionality(
+            textDirection: getDirectionOfNode(node), child: editableTextLine));
       } else if (node is Block) {
         final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
@@ -468,7 +469,8 @@ class RawEditorState extends EditorState
             onCheckboxTap: _handleCheckboxTap,
             readOnly: widget.readOnly,
             customStyleBuilder: widget.customStyleBuilder);
-        result.add(editableTextBlock);
+        result.add(Directionality(
+            textDirection: getDirectionOfNode(node), child: editableTextBlock));
       } else {
         throw StateError('Unreachable.');
       }
@@ -582,12 +584,35 @@ class RawEditorState extends EditorState
               _onChangeTextEditingValue(!_hasFocus);
             }
           });
+
+          HardwareKeyboard.instance.addHandler(_hardwareKeyboardEvent);
         }
       });
     }
 
     // Focus
     widget.focusNode.addListener(_handleFocusChanged);
+  }
+
+  // KeyboardVisibilityController only checks for keyboards that
+  // adjust the screen size. Also watch for hardware keyboards
+  // that don't alter the screen (i.e. Chromebook, Android tablet
+  // and any hardware keyboards from an OS not listed in isKeyboardOS())
+  bool _hardwareKeyboardEvent(KeyEvent _) {
+    if (!_keyboardVisible) {
+      // hardware keyboard key pressed. Set visibility to true
+      _keyboardVisible = true;
+      // update the editor
+      _onChangeTextEditingValue(!_hasFocus);
+    }
+
+    // remove the key handler - it's no longer needed. If
+    // KeyboardVisibilityController clears visibility, it wil
+    // also enable it when appropriate.
+    HardwareKeyboard.instance.removeHandler(_hardwareKeyboardEvent);
+
+    // we didn't handle the event, just needed to know a key was pressed
+    return false;
   }
 
   @override
@@ -662,6 +687,7 @@ class RawEditorState extends EditorState
   void dispose() {
     closeConnectionIfNeeded();
     _keyboardVisibilitySubscription?.cancel();
+    HardwareKeyboard.instance.removeHandler(_hardwareKeyboardEvent);
     assert(!hasConnection);
     _selectionOverlay?.dispose();
     _selectionOverlay = null;
@@ -698,6 +724,8 @@ class RawEditorState extends EditorState
         });
       }
     }
+
+    _adjacentLineAction.stopCurrentVerticalRunIfSelectionChanges();
   }
 
   void _onChangeTextEditingValue([bool ignoreCaret = false]) {
@@ -792,7 +820,7 @@ class RawEditorState extends EditorState
 
   Future<LinkMenuAction> _linkActionPicker(Node linkNode) async {
     final link = linkNode.style.attributes[Attribute.link.key]!.value!;
-    return widget.linkActionPickerDelegate(context, link);
+    return widget.linkActionPickerDelegate(context, link, linkNode);
   }
 
   bool _showCaretOnScreenScheduled = false;
@@ -995,7 +1023,6 @@ class RawEditorState extends EditorState
 
     _replaceText(
         ReplaceTextIntent(textEditingValue, data.text!, selection, cause));
-
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
       hideToolbar();

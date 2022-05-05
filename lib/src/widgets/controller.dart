@@ -23,6 +23,7 @@ class QuillController extends ChangeNotifier {
     this.onReplaceText,
     this.onDelete,
     this.onSelectionCompleted,
+    this.onSelectionChanged,
   })  : _selection = selection,
         _keepStyleOnNewLine = keepStyleOnNewLine;
 
@@ -60,6 +61,7 @@ class QuillController extends ChangeNotifier {
   DeleteCallback? onDelete;
 
   void Function()? onSelectionCompleted;
+  void Function(TextSelection textSelection)? onSelectionChanged;
 
   /// Store any styles attribute that got toggled by the tap of a button
   /// and that has not been applied yet.
@@ -341,6 +343,8 @@ class QuillController extends ChangeNotifier {
     _selection = selection.copyWith(
         baseOffset: math.min(selection.baseOffset, end),
         extentOffset: math.min(selection.extentOffset, end));
+    toggledStyle = Style();
+    onSelectionChanged?.call(textSelection);
   }
 
   /// Given offset, find its leaf node in document

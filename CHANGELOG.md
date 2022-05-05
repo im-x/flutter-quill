@@ -1,3 +1,48 @@
+# [4.1.3]
+* Fix selection handles show/hide after paste, backspace, copy.
+
+# [4.1.2]
+* Add full support for hardware keyboards (Chromebook, Android tablets, etc) that don't alter screen UI.
+
+# [4.1.1]
+* Added textSelectionControls field in QuillEditor.
+
+# [4.1.0]
+* Added Node to linkActionPickerDelegate.
+
+# [4.0.12]
+* Add Persian(fa) language.
+
+# [4.0.11]
+* Fix cut selection error in multi-node line.
+
+# [4.0.10]
+* Fix vertical caret position bug.
+
+# [4.0.9]
+* Request keyboard focus when no child is found.
+
+# [4.0.8]
+* Fix blank lines do not display when --web-renderer=html.
+
+# [4.0.7]
+* Refactor getPlainText (better handling of blank lines and lines with multiple markups.
+
+# [4.0.6]
+* Bug fix for copying text with new lines.
+
+# [4.0.5]
+* Fixed casting null to Tuple2 when link dialog is dismissed without any input (e.g. barrier dismissed).
+
+# [4.0.4]
+* Bug fix for text direction rtl.
+
+# [4.0.3]
+* Support text direction rtl.
+
+# [4.0.2]
+* Clear toggled style on selection change.
+
 # [4.0.1]
 * Fix copy/cut/paste/selectAll not working.
 
