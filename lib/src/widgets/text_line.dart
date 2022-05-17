@@ -18,6 +18,7 @@ import '../models/documents/nodes/line.dart';
 import '../models/documents/nodes/node.dart';
 import '../models/documents/style.dart';
 import '../utils/color.dart';
+import '../utils/font.dart';
 import '../utils/platform.dart';
 import 'box.dart';
 import 'controller.dart';
@@ -345,19 +346,7 @@ class _TextLineState extends State<TextLine> {
           res = res.merge(defaultStyles.sizeHuge);
           break;
         default:
-          double? fontSize;
-          if (size.value is double) {
-            fontSize = size.value;
-          } else if (size.value is int) {
-            fontSize = size.value.toDouble();
-          } else if (size.value is String) {
-            fontSize = double.tryParse(size.value);
-          }
-          if (fontSize != null) {
-            res = res.merge(TextStyle(fontSize: fontSize));
-          } else {
-            throw 'Invalid size ${size.value}';
-          }
+          res = res.merge(TextStyle(fontSize: getFontSize(size.value)));
       }
     }
 
@@ -397,7 +386,7 @@ class _TextLineState extends State<TextLine> {
   }
 
   Future<void> _launchUrl(String url) async {
-    await launch(url, forceSafariVC: false);
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   void _tapNodeLink(Node node) {

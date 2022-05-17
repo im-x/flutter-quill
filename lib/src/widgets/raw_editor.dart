@@ -909,6 +909,14 @@ class RawEditorState extends EditorState
     if (kIsWeb) {
       return false;
     }
+
+    // selectionOverlay is aggressively released when selection is collapsed
+    // to remove unnecessary handles. Since a toolbar is requested here,
+    // attempt to create the selectionOverlay if it's not already created.
+    if (_selectionOverlay == null) {
+      _updateOrDisposeSelectionOverlayIfNeeded();
+    }
+
     if (_selectionOverlay == null || _selectionOverlay!.toolbar != null) {
       return false;
     }
@@ -1026,6 +1034,18 @@ class RawEditorState extends EditorState
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
       hideToolbar();
+    } else {
+      bringIntoView(textEditingValue.selection.extent);
+
+      // Collapse the selection and hide the toolbar and handles.
+      userUpdateTextEditingValue(
+        TextEditingValue(
+          text: textEditingValue.text,
+          selection:
+              TextSelection.collapsed(offset: textEditingValue.selection.end),
+        ),
+        cause,
+      );
     }
   }
 
@@ -1170,6 +1190,16 @@ class RawEditorState extends EditorState
     PasteTextIntent: _makeOverridable(CallbackAction<PasteTextIntent>(
         onInvoke: (intent) => pasteText(intent.cause))),
   };
+
+  @override
+  void insertTextPlaceholder(Size size) {
+    // TODO: implement insertTextPlaceholder
+  }
+
+  @override
+  void removeTextPlaceholder() {
+    // TODO: implement removeTextPlaceholder
+  }
 }
 
 class _Editor extends MultiChildRenderObjectWidget {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:i18n_extension/i18n_widget.dart';
 
 import '../models/documents/attribute.dart';
+import '../models/themes/quill_custom_icon.dart';
 import '../models/themes/quill_dialog_theme.dart';
 import '../models/themes/quill_icon_theme.dart';
 import 'controller.dart';
@@ -16,6 +17,8 @@ import 'toolbar/image_button.dart';
 import 'toolbar/image_video_utils.dart';
 import 'toolbar/indent_button.dart';
 import 'toolbar/link_style_button.dart';
+import 'toolbar/quill_dropdown_button.dart';
+import 'toolbar/quill_icon_button.dart';
 import 'toolbar/select_alignment_button.dart';
 import 'toolbar/select_header_style_button.dart';
 import 'toolbar/toggle_check_list_button.dart';
@@ -62,6 +65,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     this.multiRowsDisplay = true,
     this.color,
     this.filePickImpl,
+    this.customIcons = const [],
     this.locale,
     Key? key,
   }) : super(key: key);
@@ -72,6 +76,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     double toolbarSectionSpacing = 4,
     WrapAlignment toolbarIconAlignment = WrapAlignment.center,
     bool showDividers = true,
+    bool showFontSize = true,
     bool showBoldButton = true,
     bool showItalicButton = true,
     bool showSmallButton = false,
@@ -107,6 +112,11 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     FilePickImpl? filePickImpl,
     WebImagePickImpl? webImagePickImpl,
     WebVideoPickImpl? webVideoPickImpl,
+    List<QuillCustomIcon> customIcons = const [],
+
+    ///Map of font sizes in [int]
+    Map<String, int>? fontSizeValues,
+    int? initialFontSizeValue,
 
     ///The theme to use for the icons in the toolbar, uses type [QuillIconTheme]
     QuillIconTheme? iconTheme,
@@ -121,7 +131,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
     Key? key,
   }) {
     final isButtonGroupShown = [
-      showBoldButton ||
+      showFontSize ||
+          showBoldButton ||
           showItalicButton ||
           showSmallButton ||
           showUnderLineButton ||
@@ -143,12 +154,29 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       showLink
     ];
 
+    //default font size values
+    final fontSizes = fontSizeValues ??
+        {
+          'Default': 0,
+          '10': 10,
+          '12': 12,
+          '14': 14,
+          '16': 16,
+          '18': 18,
+          '20': 20,
+          '24': 24,
+          '28': 28,
+          '32': 32,
+          '48': 48
+        };
+
     return QuillToolbar(
       key: key,
       toolbarHeight: toolbarIconSize * 2,
       toolbarSectionSpacing: toolbarSectionSpacing,
       toolbarIconAlignment: toolbarIconAlignment,
       multiRowsDisplay: multiRowsDisplay,
+      customIcons: customIcons,
       locale: locale,
       children: [
         if (showUndo)
@@ -166,6 +194,36 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             controller: controller,
             undo: false,
             iconTheme: iconTheme,
+          ),
+        if (showFontSize)
+          QuillDropdownButton(
+            iconTheme: iconTheme,
+            iconSize: toolbarIconSize,
+            attribute: Attribute.size,
+            controller: controller,
+            items: [
+              for (MapEntry<String, int> fontSize in fontSizes.entries)
+                PopupMenuItem<int>(
+                  key: ValueKey(fontSize.key),
+                  value: fontSize.value,
+                  child: Text(fontSize.key.toString()),
+                ),
+            ],
+            onSelected: (newSize) {
+              if ((newSize != null) && (newSize as int > 0)) {
+                controller
+                    .formatSelection(Attribute.fromKeyValue('size', newSize));
+              }
+              if (newSize as int == 0) {
+                controller
+                    .formatSelection(Attribute.fromKeyValue('size', null));
+              }
+            },
+            rawitemsmap: fontSizes,
+            initialValue: (initialFontSizeValue != null) &&
+                    (initialFontSizeValue <= fontSizes.length - 1)
+                ? initialFontSizeValue
+                : 0,
           ),
         if (showBoldButton)
           ToggleStyleButton(
@@ -410,6 +468,21 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             iconTheme: iconTheme,
             dialogTheme: dialogTheme,
           ),
+        if (customIcons.isNotEmpty)
+          if (showDividers)
+            VerticalDivider(
+              indent: 12,
+              endIndent: 12,
+              color: Colors.grey.shade400,
+            ),
+        for (var customIcon in customIcons)
+          QuillIconButton(
+              highlightElevation: 0,
+              hoverElevation: 0,
+              size: toolbarIconSize * kIconButtonFactor,
+              icon: Icon(customIcon.icon, size: toolbarIconSize),
+              borderRadius: iconTheme?.borderRadius ?? 2,
+              onPressed: customIcon.onTap),
       ],
     );
   }
@@ -562,6 +635,9 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
   /// The locale to use for the editor toolbar, defaults to system locale
   /// More https://github.com/singerdmx/flutter-quill#translation
   final Locale? locale;
+
+  /// List of custom icons
+  final List<QuillCustomIcon> customIcons;
 
   @override
   Size get preferredSize => Size.fromHeight(toolbarHeight);

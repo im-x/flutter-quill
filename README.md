@@ -85,6 +85,63 @@ _controller = QuillController(
 The `QuillToolbar` class lets you customise which formatting options are available.
 [Sample Page] provides sample code for advanced usage and configuration.
 
+### Font Size
+Within the editor toolbar, a drop-down with font-sizing capabilties is available.  This can be enabled or disabled with `showFontSize`.  
+
+When enabled, the default font-size values can be modified via _optional_ `fontSizeValues`.  `fontSizeValues` accepts a `Map<String, String>` consisting of a `String` title for the font size and an `int` value for the font size.  Example:
+```
+fontSizeValues: const {'Small': '8', 'Medium': '24', 'Large': '46'}
+```
+If a font size of `0` is used, then font sizing is removed from the given block of text.
+```
+fontSizeValues: const {'Default': '0', 'Small': '8', 'Medium': '24', 'Large': '46'}
+```
+
+The initial value for font-size in the editor can also be defined via _optional_ `initialFontSizeValue` which corresponds to the index value within your map.  For example, if you would like the Medium font size to be the default start size in the above example, you would set `initialFontSizeValue: 2`.  
+
+This initial font size is not applied to the delta when first building the widget, it is only used to change the initial value for the drop-down widget.
+
+### Custom Icons
+You may add custom icons to the _end_ of the toolbar, via the `customIcons` option, which is a `List` of `QuillCustomIcon`.
+
+To add an Icon, we should use a new QuillCustomIcon class
+```
+                                QuillCustomIcon(
+                                    icon:Icons.ac_unit,
+                                    onTap: (){
+                                      debugPrint('snowflake');
+                                    }
+                                ),
+```
+
+Each `QuillCustomIcon` is used as part of the `customIcons` option as follows:
+```
+QuillToolbar.basic(
+   (...),
+    customIcons: [
+                                QuillCustomIcon(
+                                    icon:Icons.ac_unit,
+                                    onTap: (){
+                                      debugPrint('snowflake1');
+                                    }
+                                ),
+
+                                QuillCustomIcon(
+                                    icon:Icons.ac_unit,
+                                    onTap: (){
+                                      debugPrint('snowflake2');
+                                    }
+                                ),
+
+                                QuillCustomIcon(
+                                    icon:Icons.ac_unit,
+                                    onTap: (){
+                                      debugPrint('snowflake3');
+                                    }
+                                ),
+    ]
+```                             
+
 ## Web
 
 For web development, use `flutter config --enable-web` for flutter or use [ReactQuill] for React.
@@ -116,7 +173,7 @@ The package offers translations for the quill toolbar and editor, it will follow
 QuillToolbar(locale: Locale('fr'), ...)
 QuillEditor(locale: Locale('fr'), ...)
 ```
-Currently, translations are available for these 18 locales:
+Currently, translations are available for these 19 locales:
 * `Locale('en')`
 * `Locale('ar')`
 * `Locale('de')`
@@ -135,6 +192,7 @@ Currently, translations are available for these 18 locales:
 * `Locale('id')`
 * `Locale('no')`
 * `Locale('fa')`
+* `Locale('hi')`
 
 ### Contributing to translations
 The translation file is located at [lib/src/translations/toolbar.i18n.dart](lib/src/translations/toolbar.i18n.dart). Feel free to contribute your own translations, just copy the English translations map and replace the values with your translations. Then open a pull request so everyone can benefit from your translations!
