@@ -1,169 +1,222 @@
 import 'dart:convert';
 
 import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart';
+import 'package:html/parser.dart' as parser;
 import 'package:quiver/strings.dart';
 import '../../flutter_quill.dart';
+
+enum _HtmlType {
+  BLOCK,
+  INLINE,
+  EMBED,
+}
+
+final Map<String, _HtmlType> _kSupportedHTMLElements = {
+  'hr': _HtmlType.EMBED,
+  'img': _HtmlType.EMBED,
+
+  'li': _HtmlType.BLOCK,
+  'h1': _HtmlType.BLOCK,
+  'h2': _HtmlType.BLOCK,
+  'h3': _HtmlType.BLOCK,
+  'pre': _HtmlType.BLOCK,
+  'div': _HtmlType.BLOCK,
+  'code': _HtmlType.BLOCK,
+  'blockquote': _HtmlType.BLOCK,
+
+  'i': _HtmlType.INLINE, // Italic
+  'em': _HtmlType.INLINE,
+  'b': _HtmlType.INLINE, // Bold,
+  'strong': _HtmlType.INLINE,
+  'a': _HtmlType.INLINE,
+  'p': _HtmlType.INLINE,
+  'span': _HtmlType.INLINE,
+  's': _HtmlType.INLINE,
+};
+
+final _kHexColorRegex = RegExp(
+  r'color:\s?(#[0-9a-fA-F]{6,8})',
+);
+
+final _kRgbColorRegex = RegExp(
+  r'color:\s?rgb\((\d+), (\d+), (\d+)\)',
+);
+
+final _kInlineEmbedRegex = RegExp(
+  r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]',
+);
 
 /// HTML -> Delta
 class Html2DeltaDecoder extends Converter<String, Delta> {
   @override
   Delta convert(String input) {
     var delta = Delta();
-    final html = parse(input);
 
-    html.body!.nodes
-      ..removeWhere(
-        (htmlNode) =>
-            htmlNode is dom.Element &&
-            htmlNode.localName == 'p' &&
-            htmlNode.nodes.isEmpty,
-      )
-      ..forEach((htmlNode) => delta = _parseNode(htmlNode, delta));
+    final html = parser.parse(input);
+    final body = html.body;
+    if (body == null) {
+      return delta;
+    }
 
-    if (delta.isEmpty ||
-        !(delta.last.data is String &&
-            (delta.last.data as String).endsWith('\n'))) {
+    final nodes = body.nodes..removeWhere(isEmptyNode);
+    for (final htmlNode in nodes) {
+      delta = _parseNode(
+        htmlNode: htmlNode,
+        delta: delta,
+      );
+    }
+
+    if (_checkNeedNewLine(delta)) {
       delta = _appendNewLine(delta);
     }
+
     return delta;
+  }
+
+  bool _checkNeedNewLine(Delta delta) {
+    if (delta.isEmpty) {
+      return true;
+    }
+
+    final lastData = delta.last.data;
+    if (!(lastData is String && lastData.endsWith('\n'))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool isEmptyNode(dom.Node htmlNode) {
+    if (htmlNode is! dom.Element) return false;
+    if (htmlNode.localName != 'p') return false;
+    if (htmlNode.nodes.isNotEmpty) return false;
+    return true;
   }
 
   Delta _appendNewLine(Delta delta) {
     final operations = delta.toList();
+
     if (operations.isNotEmpty && operations.last.data is! Embeddable) {
-      final lastOperation = operations.removeLast();
-      operations.add(
-        Operation.insert('${lastOperation.data}\n', lastOperation.attributes),
-      );
+      final lastOp = operations.removeLast();
+      operations.add(Operation.insert('${lastOp.data}\n', lastOp.attributes));
       delta = Delta();
       operations.forEach(delta.push);
     } else {
       return delta..insert('\n');
     }
+
     return delta;
   }
 
-  Delta _parseNode(
-    dom.Node htmlNode,
-    Delta delta, {
+  Delta _parseNode({
+    required dom.Node htmlNode,
+    required Delta delta,
     bool? inList,
     Map<String, dynamic>? parentAttributes,
     Map<String, dynamic>? parentBlockAttributes,
   }) {
-    final attributes = parentAttributes ?? <String, dynamic>{};
-    final blockAttributes = parentBlockAttributes ?? <String, dynamic>{};
-
     if (htmlNode is dom.Element) {
-      // The html node is an element
       final element = htmlNode;
       final elementName = htmlNode.localName;
       if (elementName == 'ul') {
-        // Unordered list
-        element.children.forEach((child) {
+        for (final element in element.children) {
           delta = _parseElement(
-            child,
-            delta,
+            element: element,
+            delta: delta,
             listType: 'ul',
             inList: inList,
-            parentAttributes: attributes,
-            parentBlockAttributes: blockAttributes,
+            parentAttributes: parentAttributes,
+            parentBlockAttributes: parentBlockAttributes,
           );
-        });
+        }
         return delta;
       } else if (elementName == 'ol') {
-        // Ordered list
-        element.children.forEach((child) {
+        for (final element in element.children) {
           delta = _parseElement(
-            child,
-            delta,
+            element: element,
+            delta: delta,
             listType: 'ol',
             inList: inList,
-            parentAttributes: attributes,
-            parentBlockAttributes: blockAttributes,
+            parentAttributes: parentAttributes,
+            parentBlockAttributes: parentBlockAttributes,
           );
-        });
+        }
         return delta;
       } else if (elementName == 'p') {
-        // Paragraph
         final nodes = element.nodes;
 
-        // TODO find a simpler way to express this
         if (nodes.length == 1 &&
             nodes.first is dom.Element &&
             (nodes.first as dom.Element).localName == 'br') {
-          // The p tag looks like <p><br></p> so we should treat it as a blank
-          // line
           return delta..insert('\n');
         } else {
           for (var i = 0; i < nodes.length; i++) {
             final currentNode = nodes[i];
             delta = _parseNode(
-              currentNode,
-              delta,
-              parentAttributes: parentAttributes ?? <String, dynamic>{},
-              parentBlockAttributes:
-                  parentBlockAttributes ?? <String, dynamic>{},
+              htmlNode: currentNode,
+              delta: delta,
+              inList: inList,
+              parentAttributes: parentAttributes,
+              parentBlockAttributes: parentBlockAttributes,
             );
 
-            final indent = getIndentFromClassName(element.className);
+            final indent = _getIndent(element.className);
             if (indent > 0) {
               delta.insert('\n', {'indent': indent});
             }
           }
-          if (delta.isEmpty ||
-              !(delta.last.data is String &&
-                  (delta.last.data as String).endsWith('\n'))) {
+
+          if (_checkNeedNewLine(delta)) {
             delta = _appendNewLine(delta);
           }
           return delta;
         }
       } else if (elementName == 'br') {
         return delta..insert('\n');
-      } else if (_supportedHTMLElements[elementName] == null) {
-        // Not a supported element
+      } else if (_kSupportedHTMLElements[elementName] == null) {
         return delta;
       } else {
-        // A supported element that isn't an ordered or unordered list
         delta = _parseElement(
-          element,
-          delta,
+          element: element,
+          delta: delta,
           inList: inList,
-          parentAttributes: parentAttributes ?? <String, dynamic>{},
-          parentBlockAttributes: parentBlockAttributes ?? <String, dynamic>{},
+          parentAttributes: parentAttributes,
+          parentBlockAttributes: parentBlockAttributes,
         );
         return delta;
       }
     } else if (htmlNode is dom.Text) {
-      // The html node is text
-      final text = htmlNode;
       _insertText(
-        delta,
-        text.text,
-        attributes: parentAttributes ?? <String, dynamic>{},
+        delta: delta,
+        text: htmlNode.text,
+        attributes: parentAttributes,
       );
       return delta;
     } else {
-      // The html node isn't an element or text e.g. if it's a comment
       return delta;
     }
   }
 
-  void _insertText(Delta delta, String text,
-      {Map<String, dynamic>? attributes}) {
+  void _insertText({
+    required Delta delta,
+    required String text,
+    Map<String, dynamic>? attributes,
+  }) {
     final texts = <String>[];
 
-    final reg = RegExp(r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]');
-    final matches = reg.allMatches(text);
+    final matches = _kInlineEmbedRegex.allMatches(text);
     if (matches.isNotEmpty) {
-      splitTextByMatches(text, matches, texts);
+      texts.addAll(_splitTextByMatches(text, matches));
     } else {
       texts.addAll(text.split('\n'));
     }
 
     for (var i = 0; i < texts.length; i++) {
       final item = texts[i];
-      if (isEmpty(item)) continue;
+      if (isEmpty(item)) {
+        continue;
+      }
+
       if (item.length > 3) {
         if (item.startsWith('[@') && item.endsWith(']')) {
           final splitStrings = item.substring(2, item.length - 1).split(':');
@@ -193,36 +246,45 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
     }
   }
 
-  void splitTextByMatches(
-      String text, Iterable<RegExpMatch> atMatches, List<String> texts) {
+  List<String> _splitTextByMatches(
+    String text,
+    Iterable<RegExpMatch> atMatches,
+  ) {
+    final texts = <String>[];
     final indexes = <int>[0];
-    atMatches.forEach((m) => indexes
-      ..add(m.start)
-      ..add(m.end));
+    atMatches.forEach(
+      (m) => indexes
+        ..add(m.start)
+        ..add(m.end),
+    );
     indexes.add(text.length);
 
     for (var i = 0; i <= indexes.length - 2; i++) {
       final childText = text.substring(indexes[i], indexes[i + 1]);
-      if (isNotBlank(childText)) {
-        final childList = childText.split('\n');
-        for (var j = 0; j < childList.length; ++j) {
-          var item = childList[j];
-          if (j > 0) item += '\n';
-          texts.add(item);
-        }
+      if (isBlank(childText)) {
+        continue;
+      }
+
+      final childList = childText.split('\n');
+      for (var j = 0; j < childList.length; ++j) {
+        var item = childList[j];
+        if (j > 0) item += '\n';
+        texts.add(item);
       }
     }
+
+    return texts;
   }
 
-  Delta _parseElement(
-    dom.Element element,
-    Delta delta, {
+  Delta _parseElement({
+    required dom.Element element,
+    required Delta delta,
     required bool? inList,
     Map<String, dynamic>? parentAttributes,
     Map<String, dynamic>? parentBlockAttributes,
     String? listType,
   }) {
-    final type = _supportedHTMLElements[element.localName];
+    final type = _kSupportedHTMLElements[element.localName];
     final attributes = parentAttributes ?? <String, dynamic>{};
     final blockAttributes = parentBlockAttributes ?? <String, dynamic>{};
 
@@ -245,20 +307,21 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
         blockAttributes[Attribute.h3.key] = Attribute.h3.value;
       }
 
-      final indent = getIndentFromClassName(element.className);
+      final indent = _getIndent(element.className);
       if (indent > 0) {
         blockAttributes[Attribute.indent.key] = indent;
       }
 
-      element.nodes.forEach((node) {
+      for (final node in element.nodes) {
         delta = _parseNode(
-          node,
-          delta,
+          htmlNode: node,
+          delta: delta,
           inList: element.localName == 'li',
           parentAttributes: attributes,
           parentBlockAttributes: blockAttributes,
         );
-      });
+      }
+
       if (blockAttributes.isNotEmpty) {
         delta.insert('\n', blockAttributes);
       }
@@ -295,98 +358,89 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       }
       if (element.localName == 'span') {
         final style = element.attributes['style'];
-        if (style != null) {
-          final regex = RegExp(r'color:\s?(#[0-9a-fA-F]{6,8})');
-          final regex1 = RegExp(r'color:\s?rgb\((\d+), (\d+), (\d+)\)');
-          if (regex.hasMatch(style)) {
-            final matches = regex.allMatches(style);
-            if (matches.isNotEmpty) {
-              final match = matches.first;
-              if (match.groupCount == 1) {
-                attributes[Attribute.color.key] = match.group(1);
-              }
-            }
-          } else if (regex1.hasMatch(style)) {
-            final matches = regex1.allMatches(style);
-            if (matches.isNotEmpty) {
-              final match = matches.first;
-              if (match.groupCount == 3) {
-                attributes[Attribute.color.key] = '#'
-                    // ignore: lines_longer_than_80_chars
-                    '${int.tryParse(match.group(1)!)!.toRadixString(16).padLeft(2, '0')}'
-                    // ignore: lines_longer_than_80_chars
-                    '${int.tryParse(match.group(2)!)!.toRadixString(16).padLeft(2, '0')}'
-                    // ignore: lines_longer_than_80_chars
-                    '${int.tryParse(match.group(3)!)!.toRadixString(16).padLeft(2, '0')}';
-              }
-            }
-          }
+        final color = _getStyleHexColor(style);
+        if (color != null) {
+          attributes[Attribute.color.key] = color;
         }
       }
+
       if (element.children.isEmpty) {
-        // The element has no child elements i.e. this is the leaf element
         _insertText(
-          delta,
-          element.text,
+          delta: delta,
+          text: element.text,
           attributes: attributes,
         );
+
         if (attributes[Attribute.link.key] != null) {
-          // It's a link
           delta.insert(' ');
           attributes.clear();
         }
       } else {
-        // The element has child elements(subclass of node) and potentially
-        // text(subclass of node)
-        element.nodes.forEach(
-          (node) {
-            delta = _parseNode(
-              node,
-              delta,
-              parentAttributes: attributes,
-            );
-          },
-        );
+        for (final node in element.nodes) {
+          delta = _parseNode(
+            htmlNode: node,
+            delta: delta,
+            parentAttributes: attributes,
+          );
+        }
       }
       return delta;
     }
   }
 
-  int getIndentFromClassName(String className) {
-    if (className != '' && className.startsWith('ql-indent-')) {
-      try {
-        if (className.contains(' ')) {
-          className = className.split(' ')[0];
-        }
-        final indent = int.parse(className.replaceAll('ql-indent-', ''));
-        return indent;
-      } catch (e) {
-        return 0;
-      }
+  String? _getStyleHexColor(String? style) {
+    if (style == null) {
+      return null;
     }
-    return 0;
+
+    if (_kHexColorRegex.hasMatch(style)) {
+      final matches = _kHexColorRegex.allMatches(style);
+      if (matches.isEmpty) return null;
+
+      final firstMatch = matches.first;
+      if (firstMatch.groupCount != 1) return null;
+
+      return firstMatch.group(1);
+    }
+
+    if (_kRgbColorRegex.hasMatch(style)) {
+      final matches = _kRgbColorRegex.allMatches(style);
+      if (matches.isEmpty) return null;
+
+      final match = matches.first;
+      if (match.groupCount != 3) return null;
+
+      try {
+        final color = '#'
+            '${getHex(match.group(1)!)}'
+            '${getHex(match.group(2)!)}'
+            '${getHex(match.group(3)!)}';
+        return color;
+      } catch (e) {}
+    }
+
+    return null;
   }
 
-  final Map<String, _HtmlType> _supportedHTMLElements = {
-    'hr': _HtmlType.EMBED,
-    'li': _HtmlType.BLOCK,
-    'h1': _HtmlType.BLOCK,
-    'h2': _HtmlType.BLOCK,
-    'h3': _HtmlType.BLOCK,
-    'pre': _HtmlType.BLOCK,
-    'div': _HtmlType.BLOCK,
-    'img': _HtmlType.EMBED,
-    'code': _HtmlType.BLOCK,
-    'blockquote': _HtmlType.BLOCK,
-    'i': _HtmlType.INLINE, // Italic
-    'em': _HtmlType.INLINE,
-    'b': _HtmlType.INLINE, // Bold,
-    'strong': _HtmlType.INLINE,
-    'a': _HtmlType.INLINE,
-    'p': _HtmlType.INLINE,
-    'span': _HtmlType.INLINE,
-    's': _HtmlType.INLINE,
-  };
-}
+  String getHex(String number) {
+    try {
+      return int.tryParse(number)!.toRadixString(16).padLeft(2, '0');
+    } catch (e) {
+      return '00';
+    }
+  }
 
-enum _HtmlType { BLOCK, INLINE, EMBED }
+  int _getIndent(String className) {
+    if (className.isEmpty || !className.startsWith('ql-indent-')) {
+      return 0;
+    }
+    try {
+      if (className.contains(' ')) {
+        className = className.split(' ')[0];
+      }
+      return int.parse(className.replaceAll('ql-indent-', ''));
+      // ignore: empty_catches
+    } catch (e) {}
+    return 0;
+  }
+}
