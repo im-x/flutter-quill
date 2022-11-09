@@ -327,6 +327,9 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       }
       return delta;
     } else if (type == _HtmlType.EMBED) {
+      if (element.id == 'undefined' && element.className == 'ql-emoji') {
+        return delta;
+      }
       // Document document;
       // if (element.localName == 'img') {
       //   /* delta.insert('\n');
