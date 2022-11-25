@@ -330,6 +330,9 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       if (element.id == 'undefined' && element.className == 'ql-emoji') {
         return delta;
       }
+      if (element.className == 'ql-emoji') {
+        return delta;
+      }
       // Document document;
       // if (element.localName == 'img') {
       //   /* delta.insert('\n');
