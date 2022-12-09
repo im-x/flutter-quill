@@ -145,7 +145,7 @@ Widget defaultEmbedBuilder(BuildContext context, QuillController controller,
     case 'mention':
     case 'topic':
     case 'edited':
-      return (node.value as InlineEmbed).getEmbedWidget();
+      return (node.value as InlineEmbed).getEmbedWidget(canClick: !readOnly);
     default:
       throw UnimplementedError(
         'Embeddable type "${node.value.type}" is not supported by default '

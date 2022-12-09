@@ -70,8 +70,10 @@ class InlineEmbed extends Embeddable {
     return '[%$name%]';
   }
 
-  Widget getEmbedWidget() {
-    return QuillData.getInlineEmbedWidget?.call(this) ??
+  Widget getEmbedWidget({
+    bool canClick = true,
+  }) {
+    return QuillData.getInlineEmbedWidget?.call(this, canClick: canClick) ??
         const SizedBox.shrink();
   }
 

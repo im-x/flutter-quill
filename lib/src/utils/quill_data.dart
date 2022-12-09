@@ -11,5 +11,6 @@ class QuillData {
       (chatFontStyle.fontSize! * chatFontSizeScale).round().toDouble();
 
   static bool Function(InlineEmbed embed)? onInlineEmbedTap;
-  static Widget Function(InlineEmbed embed)? getInlineEmbedWidget;
+  static Widget Function(InlineEmbed embed, {bool canClick})?
+      getInlineEmbedWidget;
 }
