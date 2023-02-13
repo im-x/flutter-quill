@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import '../../../utils/quill_data.dart';
+import 'dart:convert';
 
 /// An object which can be embedded into a Quill document.
 ///
@@ -46,6 +47,24 @@ class BlockEmbed extends Embeddable {
 
   static const String videoType = 'video';
   static BlockEmbed video(String videoUrl) => BlockEmbed(videoType, videoUrl);
+
+  static const String formulaType = 'formula';
+  static BlockEmbed formula(String formula) => BlockEmbed(formulaType, formula);
+
+  static const String customType = 'custom';
+  static BlockEmbed custom(CustomBlockEmbed customBlock) =>
+      BlockEmbed(customType, customBlock.toJsonString());
+}
+
+class CustomBlockEmbed extends BlockEmbed {
+  const CustomBlockEmbed(String type, String data) : super(type, data);
+
+  String toJsonString() => jsonEncode(toJson());
+
+  static CustomBlockEmbed fromJsonString(String data) {
+    final embeddable = Embeddable.fromJson(jsonDecode(data));
+    return CustomBlockEmbed(embeddable.type, embeddable.data);
+  }
 }
 
 class InlineEmbed extends Embeddable {

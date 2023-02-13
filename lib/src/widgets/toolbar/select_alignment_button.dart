@@ -16,6 +16,7 @@ class SelectAlignmentButton extends StatefulWidget {
     this.showCenterAlignment,
     this.showRightAlignment,
     this.showJustifyAlignment,
+    this.afterButtonPressed,
     Key? key,
   }) : super(key: key);
 
@@ -27,6 +28,7 @@ class SelectAlignmentButton extends StatefulWidget {
   final bool? showCenterAlignment;
   final bool? showRightAlignment;
   final bool? showJustifyAlignment;
+  final VoidCallback? afterButtonPressed;
 
   @override
   _SelectAlignmentButtonState createState() => _SelectAlignmentButtonState();
@@ -101,13 +103,16 @@ class _SelectAlignmentButtonState extends State<SelectAlignmentButton> {
                       widget.iconTheme?.borderRadius ?? 2)),
               fillColor: _valueToText[_value] == _valueString[index]
                   ? (widget.iconTheme?.iconSelectedFillColor ??
-                      theme.toggleableActiveColor)
+                      Theme.of(context).primaryColor)
                   : (widget.iconTheme?.iconUnselectedFillColor ??
                       theme.canvasColor),
-              onPressed: () => _valueAttribute[index] == Attribute.leftAlignment
-                  ? widget.controller
-                      .formatSelection(Attribute.clone(Attribute.align, null))
-                  : widget.controller.formatSelection(_valueAttribute[index]),
+              onPressed: () {
+                _valueAttribute[index] == Attribute.leftAlignment
+                    ? widget.controller
+                        .formatSelection(Attribute.clone(Attribute.align, null))
+                    : widget.controller.formatSelection(_valueAttribute[index]);
+                widget.afterButtonPressed?.call();
+              },
               child: Icon(
                 _valueString[index] == Attribute.leftAlignment.value
                     ? Icons.format_align_left

@@ -340,7 +340,8 @@ mixin RawEditorStateTextInputClientMixin on EditorState
 
   @override
   void showAutocorrectionPromptRect(int start, int end) {
-    throw UnimplementedError();
+    // this is called VERY OFTEN when editing a document, no longer throw
+    // an exception
   }
 
   @override
@@ -357,7 +358,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     if (hasConnection) {
       // Asking for renderEditor.size here can cause errors if layout hasn't
       // occurred yet. So we schedule a post frame callback instead.
-      SchedulerBinding.instance!.addPostFrameCallback((_) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
         }

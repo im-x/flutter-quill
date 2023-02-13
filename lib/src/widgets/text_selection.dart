@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../models/documents/nodes/node.dart';
@@ -82,7 +81,12 @@ class EditorTextSelectionOverlay {
     this.dragStartBehavior = DragStartBehavior.start,
     this.handlesVisible = false,
   }) {
-    final overlay = Overlay.of(context, rootOverlay: true)!;
+    final overlay = Overlay.of(context, rootOverlay: true);
+
+    // Clipboard status is only checked on first instance of ClipboardStatusNotifier
+    // if state has changed after creation, but prior to our listener being created
+    // we won't know the status unless there is forced update i.e. occasionally no paste
+    this.clipboardStatus.update();
 
     _toolbarController = AnimationController(
         duration: const Duration(milliseconds: 150), vsync: overlay);
@@ -190,9 +194,9 @@ class EditorTextSelectionOverlay {
     handlesVisible = visible;
     // If we are in build state, it will be too late to update visibility.
     // We will need to schedule the build in next frame.
-    if (SchedulerBinding.instance!.schedulerPhase ==
+    if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
-      SchedulerBinding.instance!.addPostFrameCallback(markNeedsBuild);
+      SchedulerBinding.instance.addPostFrameCallback(markNeedsBuild);
     } else {
       markNeedsBuild();
     }
@@ -222,7 +226,7 @@ class EditorTextSelectionOverlay {
   void showToolbar() {
     assert(toolbar == null);
     toolbar = OverlayEntry(builder: _buildToolbar);
-    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)!
+    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
         .insert(toolbar!);
     _toolbarController.forward(from: 0);
 
@@ -273,9 +277,9 @@ class EditorTextSelectionOverlay {
       return;
     }
     value = newValue;
-    if (SchedulerBinding.instance!.schedulerPhase ==
+    if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
-      SchedulerBinding.instance!.addPostFrameCallback(markNeedsBuild);
+      SchedulerBinding.instance.addPostFrameCallback(markNeedsBuild);
     } else {
       markNeedsBuild();
     }
@@ -411,7 +415,7 @@ class EditorTextSelectionOverlay {
               _buildHandle(context, _TextSelectionHandlePosition.END)),
     ];
 
-    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)!
+    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
         .insertAll(_handles!);
   }
 
@@ -699,6 +703,10 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
     this.onForcePressEnd,
     this.onSingleTapUp,
     this.onSingleTapCancel,
+    this.onSecondaryTapDown,
+    this.onSecondarySingleTapUp,
+    this.onSecondarySingleTapCancel,
+    this.onSecondaryDoubleTapDown,
     this.onSingleLongTapStart,
     this.onSingleLongTapMoveUpdate,
     this.onSingleLongTapEnd,
@@ -734,6 +742,18 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// short tap, such as a long tap or drag. It is called at the moment when
   /// another gesture from the touch is recognized.
   final GestureTapCancelCallback? onSingleTapCancel;
+
+  /// onTapDown for mouse right click
+  final GestureTapDownCallback? onSecondaryTapDown;
+
+  /// onTapUp for mouse right click
+  final GestureTapUpCallback? onSecondarySingleTapUp;
+
+  /// onTapCancel for mouse right click
+  final GestureTapCancelCallback? onSecondarySingleTapCancel;
+
+  /// onDoubleTap for mouse right click
+  final GestureTapDownCallback? onSecondaryDoubleTapDown;
 
   /// Called for a single long tap that's sustained for longer than
   /// [kLongPressTimeout] but not necessarily lifted. Not called for a
@@ -788,6 +808,9 @@ class _EditorTextSelectionGestureDetectorState
   // subsequent tap up / tap hold of the same tap.
   bool _isDoubleTap = false;
 
+  // _isDoubleTap for mouse right click
+  bool _isSecondaryDoubleTap = false;
+
   @override
   void dispose() {
     _doubleTapTimer?.cancel();
@@ -833,6 +856,40 @@ class _EditorTextSelectionGestureDetectorState
   void _handleTapCancel() {
     if (widget.onSingleTapCancel != null) {
       widget.onSingleTapCancel!();
+    }
+  }
+
+  // added secondary tap function for mouse right click to show toolbar
+  void _handleSecondaryTapDown(TapDownDetails details) {
+    if (widget.onSecondaryTapDown != null) {
+      widget.onSecondaryTapDown!(details);
+    }
+    if (_doubleTapTimer != null &&
+        _isWithinDoubleTapTolerance(details.globalPosition)) {
+      if (widget.onSecondaryDoubleTapDown != null) {
+        widget.onSecondaryDoubleTapDown!(details);
+      }
+
+      _doubleTapTimer!.cancel();
+      _doubleTapTimeout();
+      _isDoubleTap = true;
+    }
+  }
+
+  void _handleSecondaryTapUp(TapUpDetails details) {
+    if (!_isSecondaryDoubleTap) {
+      if (widget.onSecondarySingleTapUp != null) {
+        widget.onSecondarySingleTapUp!(details);
+      }
+      _lastTapOffset = details.globalPosition;
+      _doubleTapTimer = Timer(kDoubleTapTimeout, _doubleTapTimeout);
+    }
+    _isSecondaryDoubleTap = false;
+  }
+
+  void _handleSecondaryTapCancel() {
+    if (widget.onSecondarySingleTapCancel != null) {
+      widget.onSecondarySingleTapCancel!();
     }
   }
 
@@ -947,7 +1004,10 @@ class _EditorTextSelectionGestureDetectorState
         instance
           ..onTapDown = _handleTapDown
           ..onTapUp = _handleTapUp
-          ..onTapCancel = _handleTapCancel;
+          ..onTapCancel = _handleTapCancel
+          ..onSecondaryTapDown = _handleSecondaryTapDown
+          ..onSecondaryTapUp = _handleSecondaryTapUp
+          ..onSecondaryTapCancel = _handleSecondaryTapCancel;
       },
     );
 

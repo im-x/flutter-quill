@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../../models/documents/attribute.dart';
 import '../../models/documents/style.dart';
 import '../../models/themes/quill_icon_theme.dart';
+import '../../translations/toolbar.i18n.dart';
 import '../controller.dart';
 
-class QuillDropdownButton<T> extends StatefulWidget {
-  const QuillDropdownButton({
-    required this.initialValue,
+class QuillFontFamilyButton extends StatefulWidget {
+  const QuillFontFamilyButton({
     required this.items,
-    required this.rawitemsmap,
+    required this.rawItemsMap,
     required this.attribute,
     required this.controller,
     required this.onSelected,
@@ -18,6 +18,7 @@ class QuillDropdownButton<T> extends StatefulWidget {
     this.hoverElevation = 1,
     this.highlightElevation = 1,
     this.iconTheme,
+    this.afterButtonPressed,
     Key? key,
   }) : super(key: key);
 
@@ -25,29 +26,28 @@ class QuillDropdownButton<T> extends StatefulWidget {
   final Color? fillColor;
   final double hoverElevation;
   final double highlightElevation;
-  final T initialValue;
-  final List<PopupMenuEntry<T>> items;
-  final Map<String, int> rawitemsmap;
-  final ValueChanged<T> onSelected;
+  final List<PopupMenuEntry<String>> items;
+  final Map<String, String> rawItemsMap;
+  final ValueChanged<String> onSelected;
   final QuillIconTheme? iconTheme;
   final Attribute attribute;
   final QuillController controller;
+  final VoidCallback? afterButtonPressed;
 
   @override
-  _QuillDropdownButtonState<T> createState() => _QuillDropdownButtonState<T>();
+  _QuillFontFamilyButtonState createState() => _QuillFontFamilyButtonState();
 }
 
-// ignore: deprecated_member_use_from_same_package
-class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
-  String _currentValue = '';
+class _QuillFontFamilyButtonState extends State<QuillFontFamilyButton> {
+  late String _defaultDisplayText;
+  late String _currentValue;
   Style get _selectionStyle => widget.controller.getSelectionStyle();
 
   @override
   void initState() {
     super.initState();
+    _currentValue = _defaultDisplayText = 'Font'.i18n;
     widget.controller.addListener(_didChangeEditingValue);
-    _currentValue =
-        widget.rawitemsmap.keys.elementAt(widget.initialValue as int);
   }
 
   @override
@@ -57,37 +57,31 @@ class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
   }
 
   @override
-  void didUpdateWidget(covariant QuillDropdownButton<T> oldWidget) {
+  void didUpdateWidget(covariant QuillFontFamilyButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_didChangeEditingValue);
       widget.controller.addListener(_didChangeEditingValue);
-      //_isToggled = _getIsToggled(_selectionStyle.attributes);
     }
   }
 
   void _didChangeEditingValue() {
-    setState(() => _currentValue = _getKeyName(_selectionStyle.attributes));
+    final attribute = _selectionStyle.attributes[widget.attribute.key];
+    if (attribute == null) {
+      setState(() => _currentValue = _defaultDisplayText);
+      return;
+    }
+    final keyName = _getKeyName(attribute.value);
+    setState(() => _currentValue = keyName ?? _defaultDisplayText);
   }
 
-  String _getKeyName(Map<String, Attribute> attrs) {
-    if (widget.attribute.key == Attribute.size.key) {
-      final attribute = attrs[widget.attribute.key];
-
-      if (attribute == null) {
-        return widget.rawitemsmap.keys
-            .elementAt(widget.initialValue as int)
-            .toString();
-      } else {
-        return widget.rawitemsmap.entries
-            .firstWhere((element) => element.value == attribute.value,
-                orElse: () => widget.rawitemsmap.entries.first)
-            .key;
+  String? _getKeyName(String value) {
+    for (final entry in widget.rawItemsMap.entries) {
+      if (entry.value == value) {
+        return entry.key;
       }
     }
-    return widget.rawitemsmap.keys
-        .elementAt(widget.initialValue as int)
-        .toString();
+    return null;
   }
 
   @override
@@ -103,7 +97,10 @@ class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
         elevation: 0,
         hoverElevation: widget.hoverElevation,
         highlightElevation: widget.hoverElevation,
-        onPressed: _showMenu,
+        onPressed: () {
+          _showMenu();
+          widget.afterButtonPressed?.call();
+        },
         child: _buildContent(context),
       ),
     );
@@ -112,8 +109,7 @@ class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
   void _showMenu() {
     final popupMenuTheme = PopupMenuTheme.of(context);
     final button = context.findRenderObject() as RenderBox;
-    final overlay =
-        Overlay.of(context)!.context.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final position = RelativeRect.fromRect(
       Rect.fromPoints(
         button.localToGlobal(Offset.zero, ancestor: overlay),
@@ -122,29 +118,24 @@ class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
       ),
       Offset.zero & overlay.size,
     );
-    showMenu<T>(
+    showMenu<String>(
       context: context,
       elevation: 4,
-      // widget.elevation ?? popupMenuTheme.elevation,
-      initialValue: widget.initialValue,
       items: widget.items,
       position: position,
       shape: popupMenuTheme.shape,
-      // widget.shape ?? popupMenuTheme.shape,
-      color: popupMenuTheme.color, // widget.color ?? popupMenuTheme.color,
-      // captureInheritedThemes: widget.captureInheritedThemes,
+      color: popupMenuTheme.color,
     ).then((newValue) {
-      if (!mounted) return null;
+      if (!mounted) return;
       if (newValue == null) {
-        // if (widget.onCanceled != null) widget.onCanceled();
-        return null;
+        return;
       }
+      final keyName = _getKeyName(newValue);
       setState(() {
-        _currentValue = widget.rawitemsmap.entries
-            .firstWhere((element) => element.value == newValue,
-                orElse: () => widget.rawitemsmap.entries.first)
-            .key;
-        widget.onSelected(newValue);
+        _currentValue = keyName ?? _defaultDisplayText;
+        if (keyName != null) {
+          widget.onSelected(newValue);
+        }
       });
     });
   }
@@ -156,7 +147,7 @@ class _QuillDropdownButtonState<T> extends State<QuillDropdownButton<T>> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(_currentValue.toString(),
+          Text(_currentValue,
               style: TextStyle(
                   fontSize: widget.iconSize / 1.15,
                   color: widget.iconTheme?.iconUnselectedColor ??

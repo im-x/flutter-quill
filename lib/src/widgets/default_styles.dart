@@ -194,7 +194,6 @@ class DefaultStyles {
     //   height: 1.3,
     // );
     final baseStyle = QuillData.chatFontStyle;
-
     const baseSpacing = Tuple2<double, double>(6, 0);
     String fontFamily;
     if (isAppleOS(themeData.platform)) {
@@ -216,6 +215,7 @@ class DefaultStyles {
               color: defaultTextStyle.style.color!.withOpacity(0.70),
               height: 1.15,
               fontWeight: FontWeight.w300,
+              decoration: TextDecoration.none,
             ),
             const Tuple2(16, 0),
             const Tuple2(0, 0),
@@ -226,6 +226,7 @@ class DefaultStyles {
               color: defaultTextStyle.style.color!.withOpacity(0.70),
               height: 1.15,
               fontWeight: FontWeight.normal,
+              decoration: TextDecoration.none,
             ),
             const Tuple2(8, 0),
             const Tuple2(0, 0),
@@ -236,6 +237,7 @@ class DefaultStyles {
               color: defaultTextStyle.style.color!.withOpacity(0.70),
               height: 1.25,
               fontWeight: FontWeight.w500,
+              decoration: TextDecoration.none,
             ),
             const Tuple2(8, 0),
             const Tuple2(0, 0),
@@ -244,7 +246,7 @@ class DefaultStyles {
             baseStyle, const Tuple2(0, 0), const Tuple2(0, 0), null),
         bold: const TextStyle(fontWeight: FontWeight.bold),
         italic: const TextStyle(fontStyle: FontStyle.italic),
-        small: const TextStyle(fontSize: 12, color: Colors.black45),
+        small: const TextStyle(fontSize: 12),
         underline: const TextStyle(decoration: TextDecoration.underline),
         strikeThrough: const TextStyle(decoration: TextDecoration.lineThrough),
         inlineCode: InlineCodeStyle(

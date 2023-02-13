@@ -46,7 +46,7 @@ class TextLine extends StatefulWidget {
 
   final Line line;
   final TextDirection? textDirection;
-  final EmbedBuilder embedBuilder;
+  final EmbedsBuilder embedBuilder;
   final DefaultStyles styles;
   final bool readOnly;
   final QuillController controller;
@@ -138,7 +138,11 @@ class _TextLineState extends State<TextLine> {
       final embed = widget.line.children.single as Embed;
       if (embed.value is BlockEmbed) {
         return EmbedProxy(widget.embedBuilder(
-            context, widget.controller, embed, widget.readOnly));
+          context,
+          widget.controller,
+          embed,
+          widget.readOnly,
+        ));
       }
     }
     final textSpan = _getTextSpanForWholeLine(context);
@@ -179,8 +183,15 @@ class _TextLineState extends State<TextLine> {
         }
         // Here it should be image
         final embed = WidgetSpan(
-            child: EmbedProxy(widget.embedBuilder(
-                context, widget.controller, child, widget.readOnly)));
+          child: EmbedProxy(
+            widget.embedBuilder(
+              context,
+              widget.controller,
+              child,
+              widget.readOnly,
+            ),
+          ),
+        );
         textSpanChildren.add(embed);
         continue;
       }
@@ -311,7 +322,7 @@ class _TextLineState extends State<TextLine> {
         if (k == Attribute.underline.key || k == Attribute.strikeThrough.key) {
           var textColor = defaultStyles.color;
           if (color?.value is String) {
-            textColor = stringToColor(color?.value);
+            textColor = stringToColor(color?.value, textColor);
           }
           res = _merge(res.copyWith(decorationColor: textColor),
               s!.copyWith(decorationColor: textColor));
