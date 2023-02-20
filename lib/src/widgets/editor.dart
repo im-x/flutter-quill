@@ -270,6 +270,9 @@ class QuillEditor extends StatefulWidget {
       this.isSimpleInput,
       this.textSelectionControls,
       this.onImagePaste,
+      this.customShortcuts,
+      this.customActions,
+      this.detectWordBoundary = true,
       Key? key})
       : super(key: key);
 
@@ -516,6 +519,11 @@ class QuillEditor extends StatefulWidget {
   /// Returns the url of the image if the image should be inserted.
   final Future<String?> Function(Uint8List imageBytes)? onImagePaste;
 
+  final Map<LogicalKeySet, Intent>? customShortcuts;
+  final Map<Type, Action<Intent>>? customActions;
+
+  final bool detectWordBoundary;
+
   @override
   QuillEditorState createState() => QuillEditorState();
 }
@@ -530,7 +538,8 @@ class QuillEditorState extends State<QuillEditor>
   void initState() {
     super.initState();
     _selectionGestureDetectorBuilder =
-        _QuillEditorSelectionGestureDetectorBuilder(this);
+        _QuillEditorSelectionGestureDetectorBuilder(
+            this, widget.detectWordBoundary);
   }
 
   @override
@@ -580,12 +589,8 @@ class QuillEditorState extends State<QuillEditor>
       readOnly: widget.readOnly,
       placeholder: widget.placeholder,
       onLaunchUrl: widget.onLaunchUrl,
-      toolbarOptions: ToolbarOptions(
-        copy: showSelectionToolbar,
-        cut: showSelectionToolbar,
-        paste: showSelectionToolbar,
-        selectAll: showSelectionToolbar,
-      ),
+      contextMenuBuilder:
+          showSelectionToolbar ? RawEditor.defaultContextMenuBuilder : null,
       showSelectionHandles: isMobile(theme.platform),
       showCursor: widget.showCursor,
       cursorStyle: CursorStyle(
@@ -628,6 +633,8 @@ class QuillEditorState extends State<QuillEditor>
       onSubmitted: widget.onSubmitted,
       isSimpleInput: widget.isSimpleInput,
       onImagePaste: widget.onImagePaste,
+      customShortcuts: widget.customShortcuts,
+      customActions: widget.customActions,
     );
 
     final editor = I18n(
@@ -635,6 +642,7 @@ class QuillEditorState extends State<QuillEditor>
       child: selectionEnabled
           ? _selectionGestureDetectorBuilder.build(
               behavior: HitTestBehavior.translucent,
+              detectWordBoundary: widget.detectWordBoundary,
               child: child,
             )
           : child,
@@ -715,10 +723,12 @@ class QuillEditorState extends State<QuillEditor>
 
 class _QuillEditorSelectionGestureDetectorBuilder
     extends EditorTextSelectionGestureDetectorBuilder {
-  _QuillEditorSelectionGestureDetectorBuilder(this._state)
-      : super(delegate: _state);
+  _QuillEditorSelectionGestureDetectorBuilder(
+      this._state, this._detectWordBoundary)
+      : super(delegate: _state, detectWordBoundary: _detectWordBoundary);
 
   final QuillEditorState _state;
+  final bool _detectWordBoundary;
 
   @override
   void onForcePressStart(ForcePressDetails details) {
@@ -836,9 +846,15 @@ class _QuillEditorSelectionGestureDetectorBuilder
             case PointerDeviceKind.unknown:
               // On macOS/iOS/iPadOS a touch tap places the cursor at the edge
               // of the word.
-              renderEditor!
-                ..selectWordEdge(SelectionChangedCause.tap)
-                ..onSelectionCompleted();
+              if (_detectWordBoundary) {
+                renderEditor!
+                  ..selectWordEdge(SelectionChangedCause.tap)
+                  ..onSelectionCompleted();
+              } else {
+                renderEditor!
+                  ..selectPosition(cause: SelectionChangedCause.tap)
+                  ..onSelectionCompleted();
+              }
               break;
             case PointerDeviceKind.trackpad:
               // TODO: Handle this case.
