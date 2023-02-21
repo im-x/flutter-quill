@@ -973,7 +973,8 @@ class RawEditorState extends EditorState
     }
     // 不是在最后
     if (controller.selection.isCollapsed &&
-        (controller.document.length - 1) > controller.selection.end) {
+        (controller.document.length - 1) > controller.selection.end &&
+        !widget.readOnly) {
       return true;
     }
     return false;
@@ -1337,6 +1338,10 @@ class RawEditorState extends EditorState
           ReplaceTextIntent(textEditingValue, text.text!, selection, cause));
 
       bringIntoView(textEditingValue.selection.extent);
+
+      if (cause == SelectionChangedCause.toolbar) {
+        hideToolbar();
+      }
 
       // Collapse the selection and hide the toolbar and handles.
       userUpdateTextEditingValue(
