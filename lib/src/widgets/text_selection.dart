@@ -4,9 +4,11 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../models/documents/nodes/node.dart';
+import 'box.dart';
 import 'editor.dart';
 
 TextSelection localSelection(Node node, TextSelection selection, fromParent) {
@@ -80,6 +82,7 @@ class EditorTextSelectionOverlay {
     this.onSelectionHandleTapped,
     this.dragStartBehavior = DragStartBehavior.start,
     this.handlesVisible = false,
+    this.magnifierConfiguration,
   }) {
     // Clipboard status is only checked on first instance of
     // ClipboardStatusNotifier
@@ -87,6 +90,7 @@ class EditorTextSelectionOverlay {
     // our listener being created
     // we won't know the status unless there is forced update
     // i.e. occasionally no paste
+    magnifierConfiguration = TextMagnifier.adaptiveMagnifierConfiguration;
     clipboardStatus.update();
   }
 
@@ -183,6 +187,13 @@ class EditorTextSelectionOverlay {
 
   TextSelection get _selection => value.selection;
 
+  final MagnifierController _magnifierController = MagnifierController();
+  bool get magnifierIsVisible => _magnifierController.shown;
+  TextMagnifierConfiguration? magnifierConfiguration;
+
+  final ValueNotifier<MagnifierInfo> _magnifierInfo =
+      ValueNotifier<MagnifierInfo>(MagnifierInfo.empty);
+
   void setHandlesVisible(bool visible) {
     if (handlesVisible == visible) {
       return;
@@ -242,14 +253,17 @@ class EditorTextSelectionOverlay {
     return Visibility(
         visible: handlesVisible,
         child: _TextSelectionHandleOverlay(
-          onSelectionHandleChanged: (newSelection) {
+          editorTextSelectionOverlay: this,
+          onSelectionHandleChanged: (newSelection, globalPosition) {
             _handleSelectionHandleChanged(newSelection, position);
+            updateMagnifier(globalPosition);
             if (newSelection != null) {
               update(
                   TextEditingValue(text: value.text, selection: newSelection));
             }
           },
           onSelectionHandleTapped: onSelectionHandleTapped,
+          onSelectionHandleEnd: hideMagnifier,
           startHandleLayerLink: startHandleLayerLink,
           endHandleLayerLink: endHandleLayerLink,
           renderObject: renderObject,
@@ -258,6 +272,113 @@ class EditorTextSelectionOverlay {
           position: position,
           dragStartBehavior: dragStartBehavior,
         ));
+  }
+
+  void _showMagnifier(MagnifierInfo initalMagnifierInfo) {
+    // Start from empty, so we don't utilize any rememnant values.
+    _magnifierInfo.value = initalMagnifierInfo;
+
+    // Pre-build the magnifiers so we can tell if we've built something
+    // or not. If we don't build a magnifiers, then we should not
+    // insert anything in the overlay.
+    final builtMagnifier = magnifierConfiguration?.magnifierBuilder(
+      context,
+      _magnifierController,
+      _magnifierInfo,
+    );
+
+    if (builtMagnifier == null) {
+      return;
+    }
+
+    _magnifierController.show(
+        context: context,
+        below: magnifierConfiguration!.shouldDisplayHandlesInMagnifier
+            ? null
+            : _handles?.first,
+        builder: (_) => builtMagnifier);
+  }
+
+  /// {@macro flutter.widgets.SelectionOverlay.showMagnifier}
+  void showMagnifier(Offset positionToShow) {
+    if (magnifierIsVisible) {
+      updateMagnifier(positionToShow);
+    } else {
+      final position = renderObject.getPositionForOffset(positionToShow);
+      _showMagnifier(
+        _buildMagnifier(
+          currentTextPosition: position,
+          globalGesturePosition: positionToShow,
+          renderEditable: renderObject,
+        ),
+      );
+    }
+  }
+
+  void _updateMagnifier(MagnifierInfo magnifierInfo) {
+    if (_magnifierController.overlayEntry == null) {
+      return;
+    }
+
+    _magnifierInfo.value = magnifierInfo;
+  }
+
+  /// {@macro flutter.widgets.SelectionOverlay.updateMagnifier}
+  void updateMagnifier(Offset positionToShow) {
+    final position = renderObject.getPositionForOffset(positionToShow);
+    // _updateSelectionOverlay();
+    _updateMagnifier(
+      _buildMagnifier(
+        currentTextPosition: position,
+        globalGesturePosition: positionToShow,
+        renderEditable: renderObject,
+      ),
+    );
+  }
+
+  void hideMagnifier() {
+    // This cannot be a check on `MagnifierController.shown`, since
+    // it's possible that the magnifier is still in the overlay, but
+    // not shown in cases where the magnifier hides itself.
+    if (_magnifierController.overlayEntry == null) {
+      return;
+    }
+
+    _magnifierController.hide();
+  }
+
+  MagnifierInfo _buildMagnifier({
+    required RenderEditor renderEditable,
+    required Offset globalGesturePosition,
+    required TextPosition currentTextPosition,
+  }) {
+    final globalRenderEditableTopLeft =
+        renderEditable.localToGlobal(Offset.zero);
+    final localCaretRect =
+        renderEditable.getLocalRectForCaret(currentTextPosition);
+
+    final lineAtOffset = renderEditable.getLineAtOffset(currentTextPosition);
+    final positionAtEndOfLine = TextPosition(
+      offset: lineAtOffset.extentOffset,
+      affinity: TextAffinity.upstream,
+    );
+
+    // Default affinity is downstream.
+    final positionAtBeginningOfLine = TextPosition(
+      offset: lineAtOffset.baseOffset,
+    );
+
+    final lineBoundaries = Rect.fromPoints(
+      renderEditable.getLocalRectForCaret(positionAtBeginningOfLine).topCenter,
+      renderEditable.getLocalRectForCaret(positionAtEndOfLine).bottomCenter,
+    );
+
+    return MagnifierInfo(
+      fieldBounds: globalRenderEditableTopLeft & renderEditable.size,
+      globalGesturePosition: globalGesturePosition,
+      caretRect: localCaretRect.shift(globalRenderEditableTopLeft),
+      currentLineBoundaries: lineBoundaries.shift(globalRenderEditableTopLeft),
+    );
   }
 
   /// Updates the overlay after the selection has changed.
@@ -327,6 +448,7 @@ class EditorTextSelectionOverlay {
 
   /// Hides the entire overlay including the toolbar and the handles.
   void hide() {
+    _magnifierController.hide();
     if (_handles != null) {
       _handles![0].remove();
       _handles![1].remove();
@@ -370,6 +492,7 @@ class EditorTextSelectionOverlay {
 /// This widget represents a single draggable text selection handle.
 class _TextSelectionHandleOverlay extends StatefulWidget {
   const _TextSelectionHandleOverlay({
+    required this.editorTextSelectionOverlay,
     required this.selection,
     required this.position,
     required this.startHandleLayerLink,
@@ -379,16 +502,19 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
     required this.onSelectionHandleTapped,
     required this.selectionControls,
     this.dragStartBehavior = DragStartBehavior.start,
+    this.onSelectionHandleEnd,
     Key? key,
   }) : super(key: key);
 
+  final EditorTextSelectionOverlay editorTextSelectionOverlay;
   final TextSelection selection;
   final _TextSelectionHandlePosition position;
   final LayerLink startHandleLayerLink;
   final LayerLink endHandleLayerLink;
   final RenderEditor renderObject;
-  final ValueChanged<TextSelection?> onSelectionHandleChanged;
+  final Function(TextSelection?, Offset) onSelectionHandleChanged;
   final VoidCallback? onSelectionHandleTapped;
+  final VoidCallback? onSelectionHandleEnd;
   final TextSelectionControls selectionControls;
   final DragStartBehavior dragStartBehavior;
 
@@ -459,6 +585,8 @@ class _TextSelectionHandleOverlayState
     final lineHeight = widget.renderObject.preferredLineHeight(textPosition);
     final handleSize = widget.selectionControls.getHandleSize(lineHeight);
     _dragPosition = details.globalPosition + Offset(0, -handleSize.height);
+
+    widget.editorTextSelectionOverlay.showMagnifier(details.globalPosition);
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
@@ -466,7 +594,10 @@ class _TextSelectionHandleOverlayState
     final position =
         widget.renderObject.getPositionForOffset(details.globalPosition);
     if (widget.selection.isCollapsed) {
-      widget.onSelectionHandleChanged(TextSelection.fromPosition(position));
+      widget.onSelectionHandleChanged(
+        TextSelection.fromPosition(position),
+        details.globalPosition,
+      );
       return;
     }
 
@@ -498,7 +629,14 @@ class _TextSelectionHandleOverlayState
       return; // don't allow order swapping.
     }
 
-    widget.onSelectionHandleChanged(newSelection);
+    widget.onSelectionHandleChanged(
+      newSelection,
+      details.globalPosition,
+    );
+  }
+
+  void _handleDragEnd(DragEndDetails dragEndDetails) {
+    widget.onSelectionHandleEnd?.call();
   }
 
   void _handleTap() {
@@ -581,6 +719,7 @@ class _TextSelectionHandleOverlayState
             dragStartBehavior: widget.dragStartBehavior,
             onPanStart: _handleDragStart,
             onPanUpdate: _handleDragUpdate,
+            onPanEnd: _handleDragEnd,
             onTap: _handleTap,
             child: Padding(
               padding: EdgeInsets.only(

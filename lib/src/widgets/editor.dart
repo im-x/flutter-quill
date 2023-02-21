@@ -739,7 +739,9 @@ class _QuillEditorSelectionGestureDetectorBuilder
   }
 
   @override
-  void onForcePressEnd(ForcePressDetails details) {}
+  void onForcePressEnd(ForcePressDetails details) {
+    textSelectionOverlay?.hideMagnifier();
+  }
 
   @override
   void onSingleLongTapMoveUpdate(LongPressMoveUpdateDetails details) {
@@ -767,6 +769,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
         SelectionChangedCause.longPress,
       );
     }
+    textSelectionOverlay?.showMagnifier(details.globalPosition);
   }
 
   bool _isPositionSelected(TapUpDetails details) {
@@ -892,6 +895,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
         renderEditor!.selectWord(SelectionChangedCause.longPress);
         Feedback.forLongPress(_state.context);
       }
+      textSelectionOverlay?.showMagnifier(details.globalPosition);
     }
   }
 

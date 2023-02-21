@@ -684,6 +684,7 @@ class RawEditorState extends EditorState
   }
 
   void _handleSelectionCompleted() {
+    _selectionOverlay?.hideMagnifier();
     controller.onSelectionCompleted?.call();
   }
 
