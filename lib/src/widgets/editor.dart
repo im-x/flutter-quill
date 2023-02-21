@@ -846,15 +846,15 @@ class _QuillEditorSelectionGestureDetectorBuilder
             case PointerDeviceKind.unknown:
               // On macOS/iOS/iPadOS a touch tap places the cursor at the edge
               // of the word.
-              if (_detectWordBoundary) {
-                renderEditor!
-                  ..selectWordEdge(SelectionChangedCause.tap)
-                  ..onSelectionCompleted();
-              } else {
-                renderEditor!
-                  ..selectPosition(cause: SelectionChangedCause.tap)
-                  ..onSelectionCompleted();
-              }
+              // if (_detectWordBoundary) {
+              //   renderEditor!
+              //     ..selectWordEdge(SelectionChangedCause.tap)
+              //     ..onSelectionCompleted();
+              // } else {
+              renderEditor!
+                ..selectPosition(cause: SelectionChangedCause.tap)
+                ..onSelectionCompleted();
+              // }
               break;
             case PointerDeviceKind.trackpad:
               // TODO: Handle this case.
