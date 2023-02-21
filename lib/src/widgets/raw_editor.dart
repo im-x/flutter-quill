@@ -965,7 +965,18 @@ class RawEditorState extends EditorState
   }
 
   bool _shouldShowSelectionHandles() {
-    return widget.showSelectionHandles && !controller.selection.isCollapsed;
+    if (!widget.showSelectionHandles) {
+      return false;
+    }
+    if (!controller.selection.isCollapsed) {
+      return true;
+    }
+    // 不是在最后
+    if (controller.selection.isCollapsed &&
+        (controller.document.length - 1) > controller.selection.end) {
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -1059,7 +1070,8 @@ class RawEditorState extends EditorState
       if (!_hasFocus) {
         _selectionOverlay!.dispose();
         _selectionOverlay = null;
-      } else if (!textEditingValue.selection.isCollapsed) {
+      } else {
+        _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
         _selectionOverlay!.update(textEditingValue);
       }
     } else if (_hasFocus) {
@@ -1079,6 +1091,8 @@ class RawEditorState extends EditorState
       );
       _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
       _selectionOverlay!.showHandles();
+    } else {
+      _selectionOverlay?.update(textEditingValue);
     }
   }
 
