@@ -259,11 +259,10 @@ class EditorTextSelectionGestureDetectorBuilder {
   ///  which triggers this callback.
   @protected
   void onSingleLongTapEnd(LongPressEndDetails details) {
-    editor?.selectionOverlay?.hideMagnifier();
-
     if (shouldShowSelectionToolbar) {
       editor!.showToolbar();
     }
+    editor?.selectionOverlay?.hideMagnifier();
   }
 
   /// Handler for [EditorTextSelectionGestureDetector.onDoubleTapDown].

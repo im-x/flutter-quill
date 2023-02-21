@@ -190,6 +190,8 @@ class EditorTextSelectionOverlay {
   final MagnifierController _magnifierController = MagnifierController();
   bool get magnifierIsVisible => _magnifierController.shown;
   TextMagnifierConfiguration? magnifierConfiguration;
+  TextPosition? _beforeTextPosition;
+  bool _isTextPositionChanged = false;
 
   final ValueNotifier<MagnifierInfo> _magnifierInfo =
       ValueNotifier<MagnifierInfo>(MagnifierInfo.empty);
@@ -231,7 +233,7 @@ class EditorTextSelectionOverlay {
   /// Shows the toolbar by inserting it into the [context]'s overlay.
   void showToolbar() {
     assert(toolbar == null);
-    if (contextMenuBuilder == null) return;
+    if (contextMenuBuilder == null || _isTextPositionChanged) return;
     toolbar = OverlayEntry(builder: (context) {
       return contextMenuBuilder!(context);
     });
@@ -326,6 +328,12 @@ class EditorTextSelectionOverlay {
   /// {@macro flutter.widgets.SelectionOverlay.updateMagnifier}
   void updateMagnifier(Offset positionToShow) {
     final position = renderObject.getPositionForOffset(positionToShow);
+    if (_beforeTextPosition != null &&
+        _beforeTextPosition!.offset != position.offset) {
+      _isTextPositionChanged = true;
+    }
+
+    _beforeTextPosition = position;
     // _updateSelectionOverlay();
     _updateMagnifier(
       _buildMagnifier(
@@ -343,7 +351,8 @@ class EditorTextSelectionOverlay {
     if (_magnifierController.overlayEntry == null) {
       return;
     }
-
+    _isTextPositionChanged = false;
+    _beforeTextPosition = null;
     _magnifierController.hide();
   }
 
