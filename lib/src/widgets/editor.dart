@@ -557,7 +557,7 @@ class QuillEditorState extends State<QuillEditor>
 
     if (isAppleOS(theme.platform)) {
       final cupertinoTheme = CupertinoTheme.of(context);
-      textSelectionControls = cupertinoTextSelectionControls;
+      textSelectionControls = materialTextSelectionControls;
       paintCursorAboveText = true;
       cursorOpacityAnimates = true;
       cursorColor ??= selectionTheme.cursorColor ?? cupertinoTheme.primaryColor;

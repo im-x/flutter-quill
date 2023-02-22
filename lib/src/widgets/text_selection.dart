@@ -335,13 +335,15 @@ class EditorTextSelectionOverlay {
 
     _beforeTextPosition = position;
     // _updateSelectionOverlay();
-    _updateMagnifier(
-      _buildMagnifier(
-        currentTextPosition: position,
-        globalGesturePosition: positionToShow,
-        renderEditable: renderObject,
-      ),
-    );
+    try {
+      _updateMagnifier(
+        _buildMagnifier(
+          currentTextPosition: position,
+          globalGesturePosition: positionToShow,
+          renderEditable: renderObject,
+        ),
+      );
+    } catch (e) {}
   }
 
   void hideMagnifier() {
@@ -402,6 +404,9 @@ class EditorTextSelectionOverlay {
   void update(TextEditingValue newValue) {
     if (value == newValue) {
       return;
+    }
+    if (value.text != newValue.text || newValue.text.isEmpty) {
+      handlesVisible = false;
     }
     value = newValue;
     if (SchedulerBinding.instance.schedulerPhase ==

@@ -974,8 +974,9 @@ class RawEditorState extends EditorState
     }
     // 不是在最后
     if (controller.selection.isCollapsed &&
-        (controller.document.length - 1) > controller.selection.end &&
-        !widget.readOnly) {
+        controller.document.length > controller.selection.end &&
+        !widget.readOnly &&
+        !controller.document.isEmpty()) {
       return true;
     }
     return false;
