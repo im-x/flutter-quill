@@ -348,6 +348,10 @@ class AutoFormatMultipleLinksRule extends InsertRule {
     // Get current text.
     final entireText = Document.fromDelta(document).toPlainText();
 
+    if (entireText.length < index) {
+      return null;
+    }
+
     // Get word before insertion.
     final leftWordPart = entireText
         // Keep all text before insertion.
