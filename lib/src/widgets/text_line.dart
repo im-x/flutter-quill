@@ -764,6 +764,9 @@ class RenderEditableTextLine extends RenderEditableBox {
         _getBoxes(TextSelection(baseOffset: 0, extentOffset: line.length - 1))
             .where((element) => element.top < lineDy && element.bottom > lineDy)
             .toList(growable: false);
+    if (lineBoxes.isEmpty) {
+      return const TextRange(start: 0, end: 0);
+    }
     return TextRange(
         start:
             getPositionForOffset(Offset(lineBoxes.first.left, lineDy)).offset,

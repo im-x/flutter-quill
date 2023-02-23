@@ -769,7 +769,8 @@ class _QuillEditorSelectionGestureDetectorBuilder
         SelectionChangedCause.longPress,
       );
     }
-    textSelectionOverlay?.showMagnifier(details.globalPosition);
+
+    // textSelectionOverlay?.showMagnifier(details.globalPosition);
   }
 
   bool _isPositionSelected(TapUpDetails details) {
@@ -895,7 +896,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
         renderEditor!.selectWord(SelectionChangedCause.longPress);
         Feedback.forLongPress(_state.context);
       }
-      textSelectionOverlay?.showMagnifier(details.globalPosition);
+      // textSelectionOverlay?.showMagnifier(details.globalPosition);
     }
   }
 
@@ -1478,6 +1479,11 @@ class RenderEditor extends RenderEditableContainerBox
     final child = childAtPosition(position);
     return child.preferredLineHeight(
         TextPosition(offset: position.offset - child.container.offset));
+  }
+
+  TextPosition getPositionForPoint(Offset globalPosition) {
+    globalPosition += -_paintOffset;
+    return getPositionForOffset(globalToLocal(globalPosition));
   }
 
   @override

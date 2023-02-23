@@ -342,6 +342,12 @@ class RawEditorState extends EditorState
     );
   }
 
+  List<TextSelectionPoint> getEndpointsForSelection() {
+    final selection = textEditingValue.selection;
+    final points = renderEditor.getEndpointsForSelection(selection);
+    return points;
+  }
+
   /// Gets the line heights at the start and end of the selection for the given
   /// [RawEditorState].
   ///
@@ -1076,6 +1082,10 @@ class RawEditorState extends EditorState
       } else {
         _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
         _selectionOverlay!.update(textEditingValue);
+        if (_selectionOverlay!.handlesVisible &&
+            !_selectionOverlay!.hasHandles) {
+          _selectionOverlay!.showHandles();
+        }
       }
     } else if (_hasFocus) {
       _selectionOverlay = EditorTextSelectionOverlay(
