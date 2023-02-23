@@ -287,7 +287,7 @@ class EditorTextSelectionOverlay {
         visible: handlesVisible,
         child: _TextSelectionHandleOverlay(
           editorTextSelectionOverlay: this,
-          onSelectionHandleChanged: (newSelection, globalPosition) {
+          onSelectionHandleChanged: (newSelection) {
             _handleSelectionHandleChanged(newSelection, position);
             if (newSelection != null) {
               update(
@@ -552,7 +552,7 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
   final LayerLink startHandleLayerLink;
   final LayerLink endHandleLayerLink;
   final RenderEditor renderObject;
-  final Function(TextSelection?, Offset) onSelectionHandleChanged;
+  final ValueChanged<TextSelection?> onSelectionHandleChanged;
   final VoidCallback? onSelectionHandleTapped;
   final VoidCallback? onSelectionHandleEnd;
   final TextSelectionControls selectionControls;
@@ -684,10 +684,7 @@ class _TextSelectionHandleOverlayState
         renderEditable: widget.renderObject,
       ));
 
-      widget.onSelectionHandleChanged(
-        TextSelection.fromPosition(position),
-        details.globalPosition,
-      );
+      widget.onSelectionHandleChanged(TextSelection.fromPosition(position));
       return;
     }
 
@@ -728,7 +725,6 @@ class _TextSelectionHandleOverlayState
 
     widget.onSelectionHandleChanged(
       newSelection,
-      details.globalPosition,
     );
   }
 
