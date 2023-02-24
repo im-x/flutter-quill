@@ -37,12 +37,25 @@ class QuillController extends ChangeNotifier {
 
   /// Document managed by this controller.
 
-  void updateDocument(Document d) {
-    document = d;
-    final delta = d.toDelta();
-    final index = delta.transformPosition(delta.length - 1);
-    updateSelection(TextSelection(baseOffset: index, extentOffset: index),
-        ChangeSource.LOCAL);
+  void updateDocument(
+    Document d, {
+    TextSelection? selection,
+    bool notify = false,
+  }) {
+    _document = d;
+
+    if (selection == null) {
+      final delta = d.toDelta();
+      final index = delta.transformPosition(delta.length - 1);
+      _updateSelection(TextSelection(baseOffset: index, extentOffset: index),
+          ChangeSource.LOCAL);
+    } else {
+      _selection = selection;
+    }
+
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   Document _document;
