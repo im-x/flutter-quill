@@ -252,6 +252,11 @@ class EditorTextSelectionOverlay {
     _handles = null;
   }
 
+  void hideToolbarIfNeed() {
+    if (toolbar == null) return;
+    hideToolbar();
+  }
+
   /// Hides the toolbar part of the overlay.
   ///
   /// To hide the whole overlay, see [hide].

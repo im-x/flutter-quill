@@ -310,6 +310,7 @@ class QuillEditor extends StatefulWidget {
     bool? isSimpleInput,
     DefaultStyles? customStyles,
     ScrollPhysics? scrollPhysics,
+    Key? key,
   }) {
     return QuillEditor(
       controller: controller,
@@ -327,6 +328,7 @@ class QuillEditor extends StatefulWidget {
       isSimpleInput: isSimpleInput,
       customStyles: customStyles,
       onSubmitted: onSubmitted,
+      key: key,
     );
   }
 
@@ -557,7 +559,7 @@ class QuillEditorState extends State<QuillEditor>
 
     if (isAppleOS(theme.platform)) {
       final cupertinoTheme = CupertinoTheme.of(context);
-      textSelectionControls = materialTextSelectionControls;
+      textSelectionControls = cupertinoTextSelectionControls;
       paintCursorAboveText = true;
       cursorOpacityAnimates = true;
       cursorColor ??= selectionTheme.cursorColor ?? cupertinoTheme.primaryColor;
@@ -743,6 +745,16 @@ class _QuillEditorSelectionGestureDetectorBuilder
     textSelectionOverlay?.hideMagnifier();
   }
 
+  double _getHandleDy(double dragDy, double handleDy) {
+    final lineHeight =
+        renderEditor!.preferredLineHeight(renderEditor!.selection.base);
+
+    final distanceDragged = dragDy - handleDy;
+    final dragDirection = distanceDragged < 0.0 ? -1 : 1;
+    final linesDragged = dragDirection * (distanceDragged.abs() / lineHeight);
+    return handleDy + linesDragged * lineHeight;
+  }
+
   @override
   void onSingleLongTapMoveUpdate(LongPressMoveUpdateDetails details) {
     if (_state.widget.onSingleLongTapMoveUpdate != null) {
@@ -762,6 +774,23 @@ class _QuillEditorSelectionGestureDetectorBuilder
         from: details.globalPosition,
         cause: SelectionChangedCause.longPress,
       );
+
+      if (textSelectionOverlay != null && renderEditor!.selection.isCollapsed) {
+        _endHandleDragPosition =
+            _getHandleDy(details.globalPosition.dy, _endHandleDragPosition);
+        final adjustedOffset = Offset(
+          details.globalPosition.dx,
+          (_endHandleDragPosition + _endHandleDragPositionToCenterOfLine).abs(),
+        );
+        final position = renderEditor!.getPositionForOffset(adjustedOffset);
+
+        textSelectionOverlay!
+            .updateMagnifierInfo(textSelectionOverlay!.buildMagnifier(
+          currentTextPosition: position,
+          globalGesturePosition: details.globalPosition,
+          renderEditable: renderEditor!,
+        ));
+      }
     } else {
       renderEditor!.selectWordsInRange(
         details.globalPosition - details.offsetFromOrigin,
@@ -875,6 +904,9 @@ class _QuillEditorSelectionGestureDetectorBuilder
     }
   }
 
+  late double _endHandleDragPosition;
+  late double _endHandleDragPositionToCenterOfLine;
+
   @override
   void onSingleLongTapStart(LongPressStartDetails details) {
     if (_state.widget.onSingleLongTapStart != null) {
@@ -892,11 +924,34 @@ class _QuillEditorSelectionGestureDetectorBuilder
           from: details.globalPosition,
           cause: SelectionChangedCause.longPress,
         );
+        if (textSelectionOverlay != null &&
+            renderEditor!.selection.isCollapsed) {
+          final lineHeight =
+              renderEditor!.preferredLineHeight(renderEditor!.selection.base);
+          _endHandleDragPosition = details.globalPosition.dy;
+          final endpoints =
+              renderEditor!.getEndpointsForSelection(renderEditor!.selection);
+          final endPoint = renderEditor!.localToGlobal(endpoints.last.point);
+          final centerOfLine = endPoint.dy - lineHeight / 2;
+          _endHandleDragPositionToCenterOfLine =
+              centerOfLine - _endHandleDragPosition;
+
+          final position =
+              renderEditor!.getPositionForOffset(details.globalPosition);
+
+          textSelectionOverlay?.showMagnifierInfo(
+            textSelectionOverlay!.buildMagnifier(
+              renderEditable: renderEditor!,
+              globalGesturePosition: details.globalPosition,
+              currentTextPosition: position,
+            ),
+          );
+        }
+        textSelectionOverlay?.hideToolbarIfNeed();
       } else {
         renderEditor!.selectWord(SelectionChangedCause.longPress);
         Feedback.forLongPress(_state.context);
       }
-      // textSelectionOverlay?.showMagnifier(details.globalPosition);
     }
   }
 
@@ -914,6 +969,10 @@ class _QuillEditorSelectionGestureDetectorBuilder
         }
       }
     }
+    if (delegate.selectionEnabled && shouldShowSelectionToolbar) {
+      editor!.showToolbar();
+    }
+
     super.onSingleLongTapEnd(details);
   }
 }
