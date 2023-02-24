@@ -627,6 +627,8 @@ class _TextSelectionHandleOverlayState
   late double _endHandleDragPositionToCenterOfLine;
 
   void _handleDragStart(DragStartDetails details) {
+    widget.editorTextSelectionOverlay.hideToolbarIfNeed();
+
     final renderObject = widget.renderObject;
     final textPosition = widget.position == _TextSelectionHandlePosition.START
         ? widget.selection.base
@@ -734,6 +736,7 @@ class _TextSelectionHandleOverlayState
   }
 
   void _handleDragEnd(DragEndDetails dragEndDetails) {
+    widget.editorTextSelectionOverlay.showToolbar();
     widget.onSelectionHandleEnd?.call();
   }
 
