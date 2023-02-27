@@ -1017,10 +1017,12 @@ class RawEditorState extends EditorState
       }
       return;
     }
+    _selectionOverlay?.hideToolbarIfNeed();
 
     if (ignoreFocus || _keyboardVisible) {
       _onChangeTextEditingValue(ignoreFocus);
     } else {
+      updateRemoteValueIfNeeded();
       requestKeyboard();
       if (mounted) {
         setState(() {
