@@ -1404,6 +1404,7 @@ class RawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
+      _selectionOverlay?.showToolbarIfNeed();
     }
   }
 

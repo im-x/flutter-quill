@@ -266,6 +266,13 @@ class EditorTextSelectionOverlay {
     toolbar = null;
   }
 
+  void showToolbarIfNeed() {
+    if (toolbar != null) {
+      return;
+    }
+    showToolbar();
+  }
+
   /// Shows the toolbar by inserting it into the [context]'s overlay.
   void showToolbar() {
     assert(toolbar == null);
