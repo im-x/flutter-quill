@@ -28,9 +28,12 @@ class QuillController extends ChangeNotifier {
         _selection = selection,
         _keepStyleOnNewLine = keepStyleOnNewLine;
 
-  factory QuillController.basic() {
+  factory QuillController.basic({
+    bool keepStyleOnNewLine = false,
+  }) {
     return QuillController(
       document: Document(),
+      keepStyleOnNewLine: keepStyleOnNewLine,
       selection: const TextSelection.collapsed(offset: 0),
     );
   }
@@ -391,7 +394,10 @@ class QuillController extends ChangeNotifier {
     _selection = selection.copyWith(
         baseOffset: math.min(selection.baseOffset, end),
         extentOffset: math.min(selection.extentOffset, end));
-    toggledStyle = Style();
+
+    if (!_keepStyleOnNewLine) {
+      toggledStyle = Style();
+    }
     onSelectionChanged?.call(textSelection);
   }
 
