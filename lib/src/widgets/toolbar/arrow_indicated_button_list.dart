@@ -117,7 +117,7 @@ class _ArrowIndicatedButtonListState extends State<ArrowIndicatedButtonList>
               hasScrollBody: false,
               child: widget.axis == Axis.horizontal
                   ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: widget.buttons,
                     )
                   : Column(

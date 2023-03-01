@@ -500,6 +500,8 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       bool showDividers = true,
       Color? fillColor,
       Color? color,
+      double iconSize = 20,
+      double iconSpace = 10,
       Widget Function(
         BuildContext context,
         Attribute attribute,
@@ -519,12 +521,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
       color: color,
       children: [
         if (externalPre != null) externalPre,
-        if (externalPre != null && showDividers)
-          VerticalDivider(
-            indent: 16,
-            endIndent: 16,
-            color: Colors.grey.shade400,
-          ),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showBoldButton,
           child: ToggleStyleButton(
@@ -535,7 +532,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             childBuilder: childBuilder,
           ),
         ),
-        const SizedBox(width: 0.6),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showItalicButton,
           child: ToggleStyleButton(
@@ -546,7 +543,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             childBuilder: childBuilder,
           ),
         ),
-        const SizedBox(width: 0.6),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showStrikeThrough,
           child: ToggleStyleButton(
@@ -557,20 +554,19 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             childBuilder: childBuilder,
           ),
         ),
-        const SizedBox(width: 0.6),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showClearFormat,
           child: ClearFormatButton(
             icon: Icons.format_clear,
+            iconSize: iconSize,
+            iconTheme: QuillIconTheme(
+              iconUnselectedFillColor: Colors.transparent,
+            ),
             controller: controller,
           ),
         ),
-        if (showDividers)
-          VerticalDivider(
-            indent: 16,
-            endIndent: 16,
-            color: Colors.grey.shade400,
-          ),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showListNumbers,
           child: ToggleStyleButton(
@@ -581,6 +577,7 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             childBuilder: childBuilder,
           ),
         ),
+        SizedBox(width: iconSpace),
         Visibility(
           visible: showListBullets,
           child: ToggleStyleButton(
@@ -589,28 +586,6 @@ class QuillToolbar extends StatelessWidget implements PreferredSizeWidget {
             icon: Icons.format_list_bulleted,
             fillColor: fillColor,
             childBuilder: childBuilder,
-          ),
-        ),
-        Visibility(
-          visible: showLink,
-          child: LinkStyleButton(controller: controller),
-        ),
-        Visibility(
-          visible: showIndent,
-          child: IndentButton(
-            icon: Icons.format_indent_increase,
-            iconSize: kDefaultIconSize,
-            controller: controller,
-            isIncrease: true,
-          ),
-        ),
-        Visibility(
-          visible: showIndent,
-          child: IndentButton(
-            icon: Icons.format_indent_decrease,
-            iconSize: kDefaultIconSize,
-            controller: controller,
-            isIncrease: false,
           ),
         ),
       ],
