@@ -249,11 +249,7 @@ class QuillController extends ChangeNotifier {
       }
     }
 
-    if (_keepStyleOnNewLine) {
-      final style = getSelectionStyle();
-      final notInlineStyle = style.attributes.values.where((s) => !s.isInline);
-      toggledStyle = style.removeAll(notInlineStyle.toSet());
-    } else {
+    if (!_keepStyleOnNewLine) {
       toggledStyle = Style();
     }
 
@@ -297,7 +293,12 @@ class QuillController extends ChangeNotifier {
     });
   }
 
-  void formatText(int index, int len, Attribute? attribute) {
+  void formatText(
+    int index,
+    int len,
+    Attribute? attribute, {
+    bool isNotify = true,
+  }) {
     if (len == 0 &&
         attribute!.isInline &&
         attribute.key != Attribute.link.key) {
@@ -316,11 +317,19 @@ class QuillController extends ChangeNotifier {
     if (selection != adjustedSelection) {
       _updateSelection(adjustedSelection, ChangeSource.LOCAL);
     }
-    notifyListeners();
+    if (isNotify) notifyListeners();
   }
 
-  void formatSelection(Attribute? attribute) {
-    formatText(selection.start, selection.end - selection.start, attribute);
+  void formatSelection(
+    Attribute? attribute, {
+    bool isNotify = true,
+  }) {
+    formatText(
+      selection.start,
+      selection.end - selection.start,
+      attribute,
+      isNotify: isNotify,
+    );
   }
 
   void moveCursorToStart() {
@@ -386,6 +395,19 @@ class QuillController extends ChangeNotifier {
 
     _isDisposed = true;
     super.dispose();
+  }
+
+  void cleanFormat({bool isNotify = true}) {
+    final attrs = <Attribute>{};
+    for (final style in getAllSelectionStyles()) {
+      for (final attr in style.attributes.values) {
+        attrs.add(attr);
+      }
+    }
+    for (final attr in attrs) {
+      formatSelection(Attribute.clone(attr, null), isNotify: false);
+    }
+    if (isNotify) notifyListeners();
   }
 
   void _updateSelection(TextSelection textSelection, ChangeSource source) {
