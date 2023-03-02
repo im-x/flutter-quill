@@ -356,7 +356,7 @@ class Line extends Container<Leaf?> {
       } else {
         for (final attr in result.values) {
           if (!style.containsKey(attr.key)) {
-            excluded.add(attr);
+            // excluded.add(attr);
           }
         }
       }

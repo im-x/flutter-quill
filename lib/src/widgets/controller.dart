@@ -122,9 +122,16 @@ class QuillController extends ChangeNotifier {
   /// Only attributes applied to all characters within this range are
   /// included in the result.
   Style getSelectionStyle() {
-    return document
-        .collectStyle(selection.start, selection.end - selection.start)
-        .mergeAll(toggledStyle);
+    if (selection.end == selection.start) {
+      final style = document
+          .collectStyle(selection.start, selection.end - selection.start)
+          .mergeAll(toggledStyle);
+      return style;
+    } else {
+      final style = document.collectStyle(
+          selection.start, selection.end - selection.start);
+      return style;
+    }
   }
 
   // Increases or decreases the indent of the current selection by 1.
@@ -167,6 +174,28 @@ class QuillController extends ChangeNotifier {
         selection.start, selection.end - selection.start)
       ..add(toggledStyle);
     return styles;
+  }
+
+  Style getSelectionAllStyle() {
+    if (selection.end == selection.start) {
+      final styles = document.collectAllStyles(
+          selection.start, selection.end - selection.start)
+        ..add(toggledStyle);
+
+      final style = Style();
+      for (final s in styles) {
+        style.mergeAll(s);
+      }
+      return style;
+    } else {
+      final styles = document.collectAllStyles(
+          selection.start, selection.end - selection.start);
+      final style = Style();
+      for (final s in styles) {
+        style.mergeAll(s);
+      }
+      return style;
+    }
   }
 
   void undo() {
@@ -405,7 +434,9 @@ class QuillController extends ChangeNotifier {
       }
     }
     for (final attr in attrs) {
-      formatSelection(Attribute.clone(attr, null), isNotify: false);
+      if (attr.isInline) {
+        formatSelection(Attribute.clone(attr, null), isNotify: false);
+      }
     }
     if (isNotify) notifyListeners();
   }
