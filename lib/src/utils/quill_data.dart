@@ -13,4 +13,16 @@ class QuillData {
   static bool Function(InlineEmbed embed)? onInlineEmbedTap;
   static Widget Function(InlineEmbed embed, {bool canClick})?
       getInlineEmbedWidget;
+
+  static RegExp kHexColorRegex = RegExp(
+    r'color:\s?(#[0-9a-fA-F]{6,8})',
+  );
+
+  static RegExp kRgbColorRegex = RegExp(
+    r'color:\s?rgb\((\d+), (\d+), (\d+)\)',
+  );
+
+  static RegExp kInlineEmbedRegex = RegExp(
+    r'\[@-?\d+:[\u4e00-\u9fa5A-Za-z ]+?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]',
+  );
 }

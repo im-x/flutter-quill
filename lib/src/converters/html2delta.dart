@@ -34,18 +34,6 @@ final Map<String, _HtmlType> _kSupportedHTMLElements = {
   's': _HtmlType.INLINE,
 };
 
-final _kHexColorRegex = RegExp(
-  r'color:\s?(#[0-9a-fA-F]{6,8})',
-);
-
-final _kRgbColorRegex = RegExp(
-  r'color:\s?rgb\((\d+), (\d+), (\d+)\)',
-);
-
-final _kInlineEmbedRegex = RegExp(
-  r'\[@-?\d+:.+?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]',
-);
-
 /// HTML -> Delta
 class Html2DeltaDecoder extends Converter<String, Delta> {
   @override
@@ -204,7 +192,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
   }) {
     final texts = <String>[];
 
-    final matches = _kInlineEmbedRegex.allMatches(text);
+    final matches = QuillData.kInlineEmbedRegex.allMatches(text);
     if (matches.isNotEmpty) {
       texts.addAll(_splitTextByMatches(text, matches));
     } else {
@@ -399,8 +387,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       return null;
     }
 
-    if (_kHexColorRegex.hasMatch(style)) {
-      final matches = _kHexColorRegex.allMatches(style);
+    if (QuillData.kHexColorRegex.hasMatch(style)) {
+      final matches = QuillData.kHexColorRegex.allMatches(style);
       if (matches.isEmpty) return null;
 
       final firstMatch = matches.first;
@@ -409,8 +397,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       return firstMatch.group(1);
     }
 
-    if (_kRgbColorRegex.hasMatch(style)) {
-      final matches = _kRgbColorRegex.allMatches(style);
+    if (QuillData.kRgbColorRegex.hasMatch(style)) {
+      final matches = QuillData.kRgbColorRegex.allMatches(style);
       if (matches.isEmpty) return null;
 
       final match = matches.first;
