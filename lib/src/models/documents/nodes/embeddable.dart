@@ -105,8 +105,18 @@ class InlineEmbed extends Embeddable {
     if (type == emojiName) {
       return '[:${data.toString()}]';
     } else if (type == mentionName) {
-      final map = data as Map<int, String>;
-      return '@${map.values.first}';
+      try {
+        final map = data as Map<int, String>;
+        final userID = map.keys.first;
+        final displayName = QuillData.getUserDisplayName?.call(userID);
+        var name = map.values.first;
+        if (displayName != null && displayName.isNotEmpty) {
+          name = displayName;
+        }
+        return '@$name';
+      } catch (e) {
+        return '@未知用户';
+      }
     } else if (type == topicName) {
       return '#${data.toString()}#';
     } else {
