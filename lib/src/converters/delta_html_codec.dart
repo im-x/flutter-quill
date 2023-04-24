@@ -6,7 +6,7 @@ import 'delta2html.dart';
 import 'html2delta.dart';
 
 const DeltaHtmlCodec html = DeltaHtmlCodec();
-final specialCodeReg = RegExp(r'[\uF000-\uFFFF]');
+final specialCodeReg = RegExp(r'[\uF000-\uF0FF]');
 
 String htmlEncode(Delta delta) {
   return html.encode(delta);
