@@ -1,16 +1,21 @@
 import 'dart:convert';
+import 'dart:io';
 
 import '../models/quill_delta.dart';
 import 'delta2html.dart';
 import 'html2delta.dart';
 
 const DeltaHtmlCodec html = DeltaHtmlCodec();
+final specialCodeReg = RegExp(r'[\uF000-\uFFFF]');
 
 String htmlEncode(Delta delta) {
   return html.encode(delta);
 }
 
 Delta htmlDecode(String source) {
+  if (Platform.isIOS && specialCodeReg.hasMatch(source)) {
+    source = source.replaceAll(specialCodeReg, '□');
+  }
   return html.decode(source);
 }
 
