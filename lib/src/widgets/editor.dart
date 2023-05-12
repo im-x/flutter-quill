@@ -603,6 +603,7 @@ class QuillEditorState extends State<QuillEditor>
         offset: cursorOffset,
         paintAboveText: widget.paintCursorAboveText ?? paintCursorAboveText,
         opacityAnimates: cursorOpacityAnimates,
+        height: QuillData.cursorHeight,
       ),
       textCapitalization: widget.textCapitalization,
       minHeight: widget.minHeight,

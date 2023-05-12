@@ -183,6 +183,7 @@ class _TextLineState extends State<TextLine> {
         }
         // Here it should be image
         final embed = WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
           child: EmbedProxy(
             widget.embedBuilder(
               context,
