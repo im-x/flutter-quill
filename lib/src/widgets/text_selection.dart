@@ -11,7 +11,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../models/documents/nodes/node.dart';
-import 'box.dart';
 import 'editor.dart';
 
 TextSelection localSelection(Node node, TextSelection selection, fromParent) {
@@ -965,7 +964,9 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// The frequency of calls is throttled to avoid excessive text layout
   /// operations in text fields. The throttling is controlled by the constant
   /// [_kDragSelectionUpdateThrottle].
-  final DragSelectionUpdateCallback? onDragSelectionUpdate;
+  final Function(
+          DragStartDetails startDetails, DragUpdateDetails updateDetails)?
+      onDragSelectionUpdate;
 
   /// Called when a mouse that was previously dragging is released.
   final GestureDragEndCallback? onDragSelectionEnd;
