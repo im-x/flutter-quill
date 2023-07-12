@@ -230,7 +230,10 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           continue;
         }
       }
-      delta.insert(item, attributes);
+      delta.insert(
+        QuillData.convertHtmlToTextNode?.call(item) ?? item,
+        attributes,
+      );
     }
   }
 

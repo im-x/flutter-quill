@@ -222,8 +222,9 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
           _writeTagsOrdered(tagsToOpen, styles: tagsToOpenStyle);
         }
 
-        // Write the content
-        htmlBuffer!.write(node.value);
+        htmlBuffer!.write(
+          QuillData.convertTextNodeToHtml?.call(node.value) ?? node.value,
+        );
 
         if (tagsToOpen.isNotEmpty) {
           _writeTagsOrdered(tagsToOpen.reversed, close: true);
