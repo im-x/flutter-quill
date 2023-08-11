@@ -311,6 +311,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           parentAttributes: attributes,
           parentBlockAttributes: blockAttributes,
         );
+        attributes.clear();
       }
 
       if (blockAttributes.isNotEmpty) {
