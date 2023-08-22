@@ -1,5 +1,3 @@
-import 'package:tuple/tuple.dart';
-
 import '../../models/documents/document.dart';
 import '../documents/attribute.dart';
 import '../documents/nodes/embeddable.dart';
@@ -37,26 +35,26 @@ class PreserveLineStyleOnSplitRule extends InsertRule {
 
     final itr = DeltaIterator(document);
     final before = itr.skip(index);
-    if (before == null ||
-        before.data is! String ||
-        (before.data as String).endsWith('\n')) {
+    if (before == null) {
       return null;
     }
-    final after = itr.next();
-    if (after.data is! String || (after.data as String).startsWith('\n')) {
+    if (before.data is String && (before.data as String).endsWith('\n')) {
       return null;
     }
 
-    final text = after.data as String;
+    final after = itr.next();
+    if (after.data is String && (after.data as String).startsWith('\n')) {
+      return null;
+    }
 
     final delta = Delta()..retain(index + (len ?? 0));
-    if (text.contains('\n')) {
+    if (after.data is String && (after.data as String).contains('\n')) {
       assert(after.isPlain);
       delta.insert('\n');
       return delta;
     }
     final nextNewLine = _getNextNewLine(itr);
-    final attributes = nextNewLine.item1?.attributes;
+    final attributes = nextNewLine.operation?.attributes;
 
     return delta..insert('\n', attributes);
   }
@@ -85,8 +83,8 @@ class PreserveBlockStyleOnInsertRule extends InsertRule {
 
     // Look for the next newline.
     final nextNewLine = _getNextNewLine(itr);
-    final lineStyle =
-        Style.fromJson(nextNewLine.item1?.attributes ?? <String, dynamic>{});
+    final lineStyle = Style.fromJson(
+        nextNewLine.operation?.attributes ?? <String, dynamic>{});
 
     final blockStyle = lineStyle.getBlocksExceptHeader();
     // Are we currently in a block? If not then ignore.
@@ -126,8 +124,8 @@ class PreserveBlockStyleOnInsertRule extends InsertRule {
     // Reset style of the original newline character if needed.
     if (resetStyle.isNotEmpty) {
       delta
-        ..retain(nextNewLine.item2!)
-        ..retain((nextNewLine.item1!.data as String).indexOf('\n'))
+        ..retain(nextNewLine.skipped!)
+        ..retain((nextNewLine.operation!.data as String).indexOf('\n'))
         ..retain(1, resetStyle);
     }
 
@@ -188,9 +186,10 @@ class AutoExitBlockRule extends InsertRule {
     // Keep looking for the next newline character to see if it shares the same
     // block style as `cur`.
     final nextNewLine = _getNextNewLine(itr);
-    if (nextNewLine.item1 != null &&
-        nextNewLine.item1!.attributes != null &&
-        Style.fromJson(nextNewLine.item1!.attributes).getBlockExceptHeader() ==
+    if (nextNewLine.operation != null &&
+        nextNewLine.operation!.attributes != null &&
+        Style.fromJson(nextNewLine.operation!.attributes)
+                .getBlockExceptHeader() ==
             blockStyle) {
       // We are not at the end of this block, ignore.
       return null;
@@ -332,7 +331,7 @@ class AutoFormatMultipleLinksRule extends InsertRule {
   // URL generator tool (https://www.randomlists.com/urls) is used.
   static const _linkPattern =
       r"((?:(http|https|Http|Https|rtsp|Rtsp):\/\/(?:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,64}(?:\:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,25})?\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(\/(?:(?:[a-zA-Z0-9\;\/\?\:\@\&\=\#\~\-\.\+\!\*\'\(\)\,\_])|(?:\%[a-fA-F0-9]{2}))*)?(?:\b|$)";
-  static final linkRegExp = RegExp(_linkPattern);
+  static final linkRegExp = RegExp(_linkPattern, caseSensitive: false);
 
   @override
   Delta? applyRule(
@@ -524,15 +523,22 @@ class CatchAllInsertRule extends InsertRule {
   }
 }
 
-Tuple2<Operation?, int?> _getNextNewLine(DeltaIterator iterator) {
+_NextNewLine _getNextNewLine(DeltaIterator iterator) {
   Operation op;
   for (var skipped = 0; iterator.hasNext; skipped += op.length!) {
     op = iterator.next();
     final lineBreak =
         (op.data is String ? op.data as String? : '')!.indexOf('\n');
     if (lineBreak >= 0) {
-      return Tuple2(op, skipped);
+      return _NextNewLine(op, skipped);
     }
   }
-  return const Tuple2(null, null);
+  return const _NextNewLine(null, null);
+}
+
+class _NextNewLine {
+  const _NextNewLine(this.operation, this.skipped);
+
+  final Operation? operation;
+  final int? skipped;
 }

@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
-// ignore: unnecessary_import
-import 'dart:typed_data';
+import 'dart:ui' as ui hide TextStyle;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -12,7 +12,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:pasteboard/pasteboard.dart';
-import 'package:tuple/tuple.dart';
 
 import '../models/documents/attribute.dart';
 import '../models/documents/document.dart';
@@ -21,7 +20,9 @@ import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/line.dart';
 import '../models/documents/nodes/node.dart';
-import '../models/documents/style.dart';
+import '../models/structs/offset_value.dart';
+import '../models/structs/vertical_spacing.dart';
+import '../models/themes/quill_dialog_theme.dart';
 import '../utils/cast.dart';
 import '../utils/delta.dart';
 import '../utils/embeds.dart';
@@ -40,46 +41,52 @@ import 'raw_editor/raw_editor_state_text_input_client_mixin.dart';
 import 'text_block.dart';
 import 'text_line.dart';
 import 'text_selection.dart';
+import 'toolbar/link_style_button2.dart';
 import 'toolbar/search_dialog.dart';
 
 class RawEditor extends StatefulWidget {
-  const RawEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollBottomInset,
-      required this.cursorStyle,
-      required this.selectionColor,
-      required this.selectionCtrls,
-      required this.embedBuilder,
-      Key? key,
-      this.scrollable = true,
-      this.padding = EdgeInsets.zero,
-      this.readOnly = false,
-      this.placeholder,
-      this.onLaunchUrl,
-      this.contextMenuBuilder = defaultContextMenuBuilder,
-      this.showSelectionHandles = false,
-      bool? showCursor,
-      this.textCapitalization = TextCapitalization.none,
-      this.maxHeight,
-      this.minHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.customShortcuts,
-      this.customActions,
-      this.expands = false,
-      this.autoFocus = false,
-      this.keyboardAppearance = Brightness.light,
-      this.enableInteractiveSelection = true,
-      this.scrollPhysics,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.floatingCursorDisabled = false,
-      this.onSubmitted,
-      this.isSimpleInput,
-      this.onImagePaste})
-      : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
+  const RawEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollBottomInset,
+    required this.cursorStyle,
+    required this.selectionColor,
+    required this.selectionCtrls,
+    required this.embedBuilder,
+    Key? key,
+    this.scrollable = true,
+    this.padding = EdgeInsets.zero,
+    this.readOnly = false,
+    this.placeholder,
+    this.onLaunchUrl,
+    this.contextMenuBuilder = defaultContextMenuBuilder,
+    this.showSelectionHandles = false,
+    bool? showCursor,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxHeight,
+    this.minHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.customShortcuts,
+    this.customActions,
+    this.expands = false,
+    this.autoFocus = false,
+    this.enableUnfocusOnTapOutside = true,
+    this.keyboardAppearance = Brightness.light,
+    this.enableInteractiveSelection = true,
+    this.scrollPhysics,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.customRecognizerBuilder,
+    this.floatingCursorDisabled = false,
+    this.onSubmitted,
+    this.isSimpleInput,
+    this.onImagePaste,
+    this.customLinkPrefixes = const <String>[],
+    this.dialogTheme,
+    this.contentInsertionConfiguration,
+  })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
@@ -94,6 +101,7 @@ class RawEditor extends StatefulWidget {
   final ScrollController scrollController;
   final bool scrollable;
   final double scrollBottomInset;
+  final bool enableUnfocusOnTapOutside;
 
   /// Additional space around the editor contents.
   final EdgeInsetsGeometry padding;
@@ -125,9 +133,11 @@ class RawEditor extends StatefulWidget {
     BuildContext context,
     RawEditorState state,
   ) {
-    return AdaptiveTextSelectionToolbar.buttonItems(
-      buttonItems: state.contextMenuButtonItems,
-      anchors: state.contextMenuAnchors,
+    return TextFieldTapRegion(
+      child: AdaptiveTextSelectionToolbar.buttonItems(
+        buttonItems: state.contextMenuButtonItems,
+        anchors: state.contextMenuAnchors,
+      ),
     );
   }
 
@@ -185,6 +195,7 @@ class RawEditor extends StatefulWidget {
   /// horizontally centered. This is mostly useful on devices with wide screens.
   final double? maxContentWidth;
 
+  /// Allows to override [DefaultStyles].
   final DefaultStyles? customStyles;
 
   /// Whether this widget's height will be sized to fill its parent.
@@ -240,14 +251,32 @@ class RawEditor extends StatefulWidget {
 
   final Future<String?> Function(Uint8List imageBytes)? onImagePaste;
 
-  final Map<LogicalKeySet, Intent>? customShortcuts;
+  /// Contains user-defined shortcuts map.
+  ///
+  /// [https://docs.flutter.dev/development/ui/advanced/actions-and-shortcuts#shortcuts]
+  final Map<ShortcutActivator, Intent>? customShortcuts;
+
+  /// Contains user-defined actions.
+  ///
+  /// [https://docs.flutter.dev/development/ui/advanced/actions-and-shortcuts#actions]
   final Map<Type, Action<Intent>>? customActions;
 
   /// Builder function for embeddable objects.
   final EmbedsBuilder embedBuilder;
   final LinkActionPickerDelegate linkActionPickerDelegate;
   final CustomStyleBuilder? customStyleBuilder;
+  final CustomRecognizerBuilder? customRecognizerBuilder;
   final bool floatingCursorDisabled;
+  final List<String> customLinkPrefixes;
+
+  /// Configures the dialog theme.
+  final QuillDialogTheme? dialogTheme;
+
+  /// Configuration of handler for media content inserted via the system input
+  /// method.
+  ///
+  /// See [https://api.flutter.dev/flutter/widgets/EditableText/contentInsertionConfiguration.html]
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
 
   final ValueChanged<String>? onSubmitted;
   final bool? isSimpleInput;
@@ -293,8 +322,8 @@ class RawEditorState extends EditorState
 
   // for pasting style
   @override
-  List<Tuple2<int, Style>> get pasteStyle => _pasteStyle;
-  List<Tuple2<int, Style>> _pasteStyle = <Tuple2<int, Style>>[];
+  List<OffsetValue> get pasteStyleAndEmbed => _pasteStyleAndEmbed;
+  List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
 
   @override
   String get pastePlainText => _pastePlainText;
@@ -307,6 +336,18 @@ class RawEditorState extends EditorState
 
   TextDirection get _textDirection => Directionality.of(context);
 
+  @override
+  bool get dirty => _dirty;
+  bool _dirty = false;
+
+  @override
+  void insertContent(KeyboardInsertedContent content) {
+    assert(widget.contentInsertionConfiguration?.allowedMimeTypes
+            .contains(content.mimeType) ??
+        false);
+    widget.contentInsertionConfiguration?.onContentInserted.call(content);
+  }
+
   /// Returns the [ContextMenuButtonItem]s representing the buttons in this
   /// platform's default selection menu for [RawEditor].
   ///
@@ -314,6 +355,7 @@ class RawEditorState extends EditorState
   List<ContextMenuButtonItem> get contextMenuButtonItems {
     return EditableText.getEditableButtonItems(
       clipboardStatus: _clipboardStatus.value,
+      onLiveTextInput: null,
       onCopy: copyEnabled
           ? () => copySelection(SelectionChangedCause.toolbar)
           : null,
@@ -337,8 +379,8 @@ class RawEditorState extends EditorState
     final points = renderEditor.getEndpointsForSelection(selection);
     return TextSelectionToolbarAnchors.fromSelection(
       renderBox: renderEditor,
-      startGlyphHeight: glyphHeights.item1,
-      endGlyphHeight: glyphHeights.item2,
+      startGlyphHeight: glyphHeights.startGlyphHeight,
+      endGlyphHeight: glyphHeights.endGlyphHeight,
       selectionEndpoints: points,
     );
   }
@@ -353,7 +395,7 @@ class RawEditorState extends EditorState
   /// [RawEditorState].
   ///
   /// Copied from [EditableTextState].
-  Tuple2<double, double> _getGlyphHeights() {
+  _GlyphHeights _getGlyphHeights() {
     final selection = textEditingValue.selection;
 
     // Only calculate handle rects if the text in the previous frame
@@ -366,7 +408,7 @@ class RawEditorState extends EditorState
     final prevText = renderEditor.document.toPlainText();
     final currText = textEditingValue.text;
     if (prevText != currText || !selection.isValid || selection.isCollapsed) {
-      return Tuple2(
+      return _GlyphHeights(
         renderEditor.preferredLineHeight(selection.base),
         renderEditor.preferredLineHeight(selection.base),
       );
@@ -376,10 +418,44 @@ class RawEditorState extends EditorState
         renderEditor.getLocalRectForCaret(selection.base);
     final endCharacterRect =
         renderEditor.getLocalRectForCaret(selection.extent);
-    return Tuple2(
+    return _GlyphHeights(
       startCharacterRect.height,
       endCharacterRect.height,
     );
+  }
+
+  void _defaultOnTapOutside(PointerDownEvent event) {
+    /// The focus dropping behavior is only present on desktop platforms
+    /// and mobile browsers.
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        // On mobile platforms, we don't unfocus on touch events unless they're
+        // in the web browser, but we do unfocus for all other kinds of events.
+        switch (event.kind) {
+          case ui.PointerDeviceKind.touch:
+            if (kIsWeb) {
+              widget.focusNode.unfocus();
+            }
+            break;
+          case ui.PointerDeviceKind.mouse:
+          case ui.PointerDeviceKind.stylus:
+          case ui.PointerDeviceKind.invertedStylus:
+          case ui.PointerDeviceKind.unknown:
+            widget.focusNode.unfocus();
+            break;
+          case ui.PointerDeviceKind.trackpad:
+            throw UnimplementedError(
+                'Unexpected pointer down event for trackpad');
+        }
+        break;
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+        widget.focusNode.unfocus();
+        break;
+    }
   }
 
   @override
@@ -397,24 +473,27 @@ class RawEditorState extends EditorState
     Widget child = CompositedTransformTarget(
       link: _toolbarLayerLink,
       child: Semantics(
-        child: _Editor(
-          key: _editorKey,
-          document: _doc,
-          selection: controller.selection,
-          hasFocus: _hasFocus,
-          scrollable: widget.scrollable,
-          cursorController: _cursorCont,
-          textDirection: _textDirection,
-          startHandleLayerLink: _startHandleLayerLink,
-          endHandleLayerLink: _endHandleLayerLink,
-          onSelectionChanged: _handleSelectionChanged,
-          onSelectionCompleted: _handleSelectionCompleted,
-          scrollBottomInset: widget.scrollBottomInset,
-          padding: widget.padding,
-          maxContentWidth: widget.maxContentWidth,
-          floatingCursorDisabled: widget.floatingCursorDisabled,
-          readOnly: widget.readOnly,
-          children: _buildChildren(_doc, context),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.text,
+          child: _Editor(
+            key: _editorKey,
+            document: _doc,
+            selection: controller.selection,
+            hasFocus: _hasFocus,
+            scrollable: widget.scrollable,
+            cursorController: _cursorCont,
+            textDirection: _textDirection,
+            startHandleLayerLink: _startHandleLayerLink,
+            endHandleLayerLink: _endHandleLayerLink,
+            onSelectionChanged: _handleSelectionChanged,
+            onSelectionCompleted: _handleSelectionCompleted,
+            scrollBottomInset: widget.scrollBottomInset,
+            padding: widget.padding,
+            maxContentWidth: widget.maxContentWidth,
+            floatingCursorDisabled: widget.floatingCursorDisabled,
+            readOnly: widget.readOnly,
+            children: _buildChildren(_doc, context),
+          ),
         ),
       ),
     );
@@ -427,7 +506,7 @@ class RawEditorState extends EditorState
       /// baseline.
       // This implies that the first line has no styles applied to it.
       final baselinePadding =
-          EdgeInsets.only(top: _styles!.paragraph!.verticalSpacing.item1);
+          EdgeInsets.only(top: _styles!.paragraph!.verticalSpacing.top);
       child = BaselineProxy(
         textStyle: _styles!.paragraph!.style,
         padding: baselinePadding,
@@ -436,25 +515,28 @@ class RawEditorState extends EditorState
           physics: widget.scrollPhysics,
           viewportBuilder: (_, offset) => CompositedTransformTarget(
             link: _toolbarLayerLink,
-            child: _Editor(
-              key: _editorKey,
-              offset: offset,
-              document: _doc,
-              selection: controller.selection,
-              hasFocus: _hasFocus,
-              scrollable: widget.scrollable,
-              textDirection: _textDirection,
-              startHandleLayerLink: _startHandleLayerLink,
-              endHandleLayerLink: _endHandleLayerLink,
-              onSelectionChanged: _handleSelectionChanged,
-              onSelectionCompleted: _handleSelectionCompleted,
-              scrollBottomInset: widget.scrollBottomInset,
-              padding: widget.padding,
-              maxContentWidth: widget.maxContentWidth,
-              cursorController: _cursorCont,
-              floatingCursorDisabled: widget.floatingCursorDisabled,
-              readOnly: widget.readOnly,
-              children: _buildChildren(_doc, context),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.text,
+              child: _Editor(
+                key: _editorKey,
+                offset: offset,
+                document: _doc,
+                selection: controller.selection,
+                hasFocus: _hasFocus,
+                scrollable: widget.scrollable,
+                textDirection: _textDirection,
+                startHandleLayerLink: _startHandleLayerLink,
+                endHandleLayerLink: _endHandleLayerLink,
+                onSelectionChanged: _handleSelectionChanged,
+                onSelectionCompleted: _handleSelectionCompleted,
+                scrollBottomInset: widget.scrollBottomInset,
+                padding: widget.padding,
+                maxContentWidth: widget.maxContentWidth,
+                cursorController: _cursorCont,
+                floatingCursorDisabled: widget.floatingCursorDisabled,
+                readOnly: widget.readOnly,
+                children: _buildChildren(_doc, context),
+              ),
             ),
           ),
         ),
@@ -467,78 +549,156 @@ class RawEditorState extends EditorState
             minHeight: widget.minHeight ?? 0.0,
             maxHeight: widget.maxHeight ?? double.infinity);
 
-    return QuillStyles(
-      data: _styles!,
-      child: Shortcuts(
-        shortcuts: <LogicalKeySet, Intent>{
-          // shortcuts added for Desktop platforms.
-          LogicalKeySet(LogicalKeyboardKey.escape):
-              const HideSelectionToolbarIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
-              const UndoTextIntent(SelectionChangedCause.keyboard),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyY):
-              const RedoTextIntent(SelectionChangedCause.keyboard),
+    final isMacOS = Theme.of(context).platform == TargetPlatform.macOS;
 
-          // Selection formatting.
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
-              const ToggleTextStyleIntent(Attribute.bold),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyU):
-              const ToggleTextStyleIntent(Attribute.underline),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyI):
-              const ToggleTextStyleIntent(Attribute.italic),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-                  LogicalKeyboardKey.keyS):
-              const ToggleTextStyleIntent(Attribute.strikeThrough),
-          LogicalKeySet(
-                  LogicalKeyboardKey.control, LogicalKeyboardKey.backquote):
-              const ToggleTextStyleIntent(Attribute.inlineCode),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyL):
-              const ToggleTextStyleIntent(Attribute.ul),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
-              const ToggleTextStyleIntent(Attribute.ol),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-                  LogicalKeyboardKey.keyB):
-              const ToggleTextStyleIntent(Attribute.blockQuote),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-                  LogicalKeyboardKey.tilde):
-              const ToggleTextStyleIntent(Attribute.codeBlock),
-          // Indent
-          LogicalKeySet(
-                  LogicalKeyboardKey.control, LogicalKeyboardKey.bracketRight):
-              const IndentSelectionIntent(true),
-          LogicalKeySet(
-                  LogicalKeyboardKey.control, LogicalKeyboardKey.bracketLeft):
-              const IndentSelectionIntent(false),
+    return TextFieldTapRegion(
+      enabled: widget.enableUnfocusOnTapOutside,
+      onTapOutside: _defaultOnTapOutside,
+      child: QuillStyles(
+        data: _styles!,
+        child: Shortcuts(
+          shortcuts: mergeMaps<ShortcutActivator, Intent>({
+            // shortcuts added for Desktop platforms.
+            const SingleActivator(
+              LogicalKeyboardKey.escape,
+            ): const HideSelectionToolbarIntent(),
+            SingleActivator(
+              LogicalKeyboardKey.keyZ,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const UndoTextIntent(SelectionChangedCause.keyboard),
+            SingleActivator(
+              LogicalKeyboardKey.keyY,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const RedoTextIntent(SelectionChangedCause.keyboard),
 
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyF):
-              const OpenSearchIntent(),
+            // Selection formatting.
+            SingleActivator(
+              LogicalKeyboardKey.keyB,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ToggleTextStyleIntent(Attribute.bold),
+            SingleActivator(
+              LogicalKeyboardKey.keyU,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ToggleTextStyleIntent(Attribute.underline),
+            SingleActivator(
+              LogicalKeyboardKey.keyI,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ToggleTextStyleIntent(Attribute.italic),
+            SingleActivator(
+              LogicalKeyboardKey.keyS,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ToggleTextStyleIntent(Attribute.strikeThrough),
+            SingleActivator(
+              LogicalKeyboardKey.backquote,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ToggleTextStyleIntent(Attribute.inlineCode),
+            SingleActivator(
+              LogicalKeyboardKey.tilde,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ToggleTextStyleIntent(Attribute.codeBlock),
+            SingleActivator(
+              LogicalKeyboardKey.keyB,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ToggleTextStyleIntent(Attribute.blockQuote),
+            SingleActivator(
+              LogicalKeyboardKey.keyK,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ApplyLinkIntent(),
 
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit1):
-              const ApplyHeaderIntent(Attribute.h1),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit2):
-              const ApplyHeaderIntent(Attribute.h2),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit3):
-              const ApplyHeaderIntent(Attribute.h3),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit0):
-              const ApplyHeaderIntent(Attribute.header),
+            // Lists
+            SingleActivator(
+              LogicalKeyboardKey.keyL,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ToggleTextStyleIntent(Attribute.ul),
+            SingleActivator(
+              LogicalKeyboardKey.keyO,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ToggleTextStyleIntent(Attribute.ol),
+            SingleActivator(
+              LogicalKeyboardKey.keyC,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const ApplyCheckListIntent(),
 
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
-              LogicalKeyboardKey.keyL): const ApplyCheckListIntent(),
+            // Indents
+            SingleActivator(
+              LogicalKeyboardKey.keyM,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const IndentSelectionIntent(true),
+            SingleActivator(
+              LogicalKeyboardKey.keyM,
+              control: !isMacOS,
+              meta: isMacOS,
+              shift: true,
+            ): const IndentSelectionIntent(false),
 
-          if (widget.customShortcuts != null) ...widget.customShortcuts!,
-        },
-        child: Actions(
-          actions: {
-            ..._actions,
-            if (widget.customActions != null) ...widget.customActions!,
-          },
-          child: Focus(
-            focusNode: widget.focusNode,
-            onKey: _onKey,
-            child: QuillKeyboardListener(
-              child: Container(
-                constraints: constraints,
-                child: child,
+            // Headers
+            SingleActivator(
+              LogicalKeyboardKey.digit1,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ApplyHeaderIntent(Attribute.h1),
+            SingleActivator(
+              LogicalKeyboardKey.digit2,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ApplyHeaderIntent(Attribute.h2),
+            SingleActivator(
+              LogicalKeyboardKey.digit3,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ApplyHeaderIntent(Attribute.h3),
+            SingleActivator(
+              LogicalKeyboardKey.digit0,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const ApplyHeaderIntent(Attribute.header),
+
+            SingleActivator(
+              LogicalKeyboardKey.keyG,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const InsertEmbedIntent(Attribute.image),
+
+            SingleActivator(
+              LogicalKeyboardKey.keyF,
+              control: !isMacOS,
+              meta: isMacOS,
+            ): const OpenSearchIntent(),
+          }, {
+            ...?widget.customShortcuts
+          }),
+          child: Actions(
+            actions: mergeMaps<Type, Action<Intent>>(_actions, {
+              ...?widget.customActions,
+            }),
+            child: Focus(
+              focusNode: widget.focusNode,
+              onKey: _onKey,
+              child: QuillKeyboardListener(
+                child: Container(
+                  constraints: constraints,
+                  child: child,
+                ),
               ),
             ),
           ),
@@ -556,15 +716,14 @@ class RawEditorState extends EditorState
     if (event is! RawKeyDownEvent) {
       return KeyEventResult.ignored;
     }
+    // Handle indenting blocks when pressing the tab key.
+    if (event.logicalKey == LogicalKeyboardKey.tab) {
+      return _handleTabKey(event);
+    }
 
     // Don't handle key if there is an active selection.
     if (controller.selection.baseOffset != controller.selection.extentOffset) {
       return KeyEventResult.ignored;
-    }
-
-    // Handle indenting blocks when pressing the tab key.
-    if (event.logicalKey == LogicalKeyboardKey.tab) {
-      return _handleTabKey(event);
     }
 
     // Handle inserting lists when space is pressed following
@@ -617,6 +776,19 @@ class RawEditorState extends EditorState
       return KeyEventResult.handled;
     }
 
+    if (controller.selection.baseOffset != controller.selection.extentOffset) {
+      if (child.node == null || child.node!.parent == null) {
+        return KeyEventResult.handled;
+      }
+      final parentBlock = child.node!.parent!;
+      if (parentBlock.style.containsKey(Attribute.ol.key) ||
+          parentBlock.style.containsKey(Attribute.ul.key) ||
+          parentBlock.style.containsKey(Attribute.checked.key)) {
+        controller.indentSelection(!event.isShiftPressed);
+      }
+      return KeyEventResult.handled;
+    }
+
     if (child.node == null) {
       return insertTabCharacter();
     }
@@ -632,16 +804,21 @@ class RawEditorState extends EditorState
       return insertTabCharacter();
     }
 
-    if (node.isNotEmpty && (node.first as leaf.Text).value.isNotEmpty) {
-      return insertTabCharacter();
-    }
-
     final parentBlock = parent;
     if (parentBlock.style.containsKey(Attribute.ol.key) ||
         parentBlock.style.containsKey(Attribute.ul.key) ||
         parentBlock.style.containsKey(Attribute.checked.key)) {
+      if (node.isNotEmpty &&
+          (node.first as leaf.Text).value.isNotEmpty &&
+          controller.selection.base.offset > node.documentOffset) {
+        return insertTabCharacter();
+      }
       controller.indentSelection(!event.isShiftPressed);
       return KeyEventResult.handled;
+    }
+
+    if (node.isNotEmpty && (node.first as leaf.Text).value.isNotEmpty) {
+      return insertTabCharacter();
     }
 
     return insertTabCharacter();
@@ -703,6 +880,7 @@ class RawEditorState extends EditorState
       final currentSelection = controller.selection.copyWith();
       final attribute = value ? Attribute.checked : Attribute.unchecked;
 
+      _markNeedsBuild();
       controller
         ..ignoreFocusOnTextChange = true
         ..formatText(offset, 0, attribute)
@@ -748,11 +926,10 @@ class RawEditorState extends EditorState
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextLine));
       } else if (node is Block) {
-        final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
             block: node,
             controller: controller,
-            textDirection: _textDirection,
+            textDirection: getDirectionOfNode(node),
             scrollBottomInset: widget.scrollBottomInset,
             verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
             textSelection: controller.selection,
@@ -771,15 +948,18 @@ class RawEditorState extends EditorState
             clearIndents: clearIndents,
             onCheckboxTap: _handleCheckboxTap,
             readOnly: widget.readOnly,
-            customStyleBuilder: widget.customStyleBuilder);
+            customStyleBuilder: widget.customStyleBuilder,
+            customLinkPrefixes: widget.customLinkPrefixes);
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
 
         clearIndents = false;
       } else {
+        _dirty = false;
         throw StateError('Unreachable.');
       }
     }
+    _dirty = false;
     return result;
   }
 
@@ -790,11 +970,13 @@ class RawEditorState extends EditorState
       textDirection: _textDirection,
       embedBuilder: widget.embedBuilder,
       customStyleBuilder: widget.customStyleBuilder,
+      customRecognizerBuilder: widget.customRecognizerBuilder,
       styles: _styles!,
       readOnly: widget.readOnly,
       controller: controller,
       linkActionPicker: _linkActionPicker,
       onLaunchUrl: widget.onLaunchUrl,
+      customLinkPrefixes: widget.customLinkPrefixes,
     );
     final editableTextLine = EditableTextLine(
         node,
@@ -812,7 +994,7 @@ class RawEditorState extends EditorState
     return editableTextLine;
   }
 
-  Tuple2<double, double> _getVerticalSpacingForLine(
+  VerticalSpacing _getVerticalSpacingForLine(
       Line line, DefaultStyles? defaultStyles) {
     final attrs = line.style.attributes;
     if (attrs.containsKey(Attribute.header.key)) {
@@ -837,7 +1019,7 @@ class RawEditorState extends EditorState
     return defaultStyles!.paragraph!.verticalSpacing;
   }
 
-  Tuple2<double, double> _getVerticalSpacingForBlock(
+  VerticalSpacing _getVerticalSpacingForBlock(
       Block node, DefaultStyles? defaultStyles) {
     final attrs = node.style.attributes;
     if (attrs.containsKey(Attribute.blockQuote.key)) {
@@ -851,7 +1033,7 @@ class RawEditorState extends EditorState
     } else if (attrs.containsKey(Attribute.align.key)) {
       return defaultStyles!.align!.verticalSpacing;
     }
-    return const Tuple2(0, 0);
+    return const VerticalSpacing(0, 0);
   }
 
   @override
@@ -1029,6 +1211,17 @@ class RawEditorState extends EditorState
     _selectionOverlay?.updateForScroll();
   }
 
+  /// Marks the editor as dirty and trigger a rebuild.
+  ///
+  /// When the editor is dirty methods that depend on the editor
+  /// state being in sync with the controller know they may be
+  /// operating on stale data.
+  void _markNeedsBuild() {
+    setState(() {
+      _dirty = true;
+    });
+  }
+
   void _didChangeTextEditingValue([bool ignoreFocus = false]) {
     if (kIsWeb) {
       _onChangeTextEditingValue(ignoreFocus);
@@ -1045,10 +1238,9 @@ class RawEditorState extends EditorState
       updateRemoteValueIfNeeded();
       requestKeyboard();
       if (mounted) {
-        setState(() {
-          // Use controller.value in build()
-          // Trigger build and updateChildren
-        });
+        // Use controller.value in build()
+        // Mark widget as dirty and trigger build and updateChildren
+        _markNeedsBuild();
       }
     }
 
@@ -1089,10 +1281,9 @@ class RawEditorState extends EditorState
       _updateOrDisposeSelectionOverlayIfNeeded();
     });
     if (mounted) {
-      setState(() {
-        // Use controller.value in build()
-        // Trigger build and updateChildren
-      });
+      // Use controller.value in build()
+      // Mark widget as dirty and trigger build and updateChildren
+      _markNeedsBuild();
     }
   }
 
@@ -1132,6 +1323,11 @@ class RawEditorState extends EditorState
   }
 
   void _handleFocusChanged() {
+    if (dirty) {
+      SchedulerBinding.instance
+          .addPostFrameCallback((_) => _handleFocusChanged());
+      return;
+    }
     openOrCloseConnection();
     _cursorCont.startOrStopCursorTimerIfNeeded(_hasFocus, controller.selection);
     _updateOrDisposeSelectionOverlayIfNeeded();
@@ -1146,10 +1342,9 @@ class RawEditorState extends EditorState
 
   void _onChangedClipboardStatus() {
     if (!mounted) return;
-    setState(() {
-      // Inform the widget that the value of clipboardStatus has changed.
-      // Trigger build and updateChildren
-    });
+    // Inform the widget that the value of clipboardStatus has changed.
+    // Trigger build and updateChildren
+    _markNeedsBuild();
   }
 
   Future<LinkMenuAction> _linkActionPicker(Node linkNode) async {
@@ -1283,7 +1478,7 @@ class RawEditorState extends EditorState
   void copySelection(SelectionChangedCause cause) {
     controller.copiedImageUrl = null;
     _pastePlainText = controller.getPlainText();
-    _pasteStyle = controller.getAllIndividualSelectionStyles();
+    _pasteStyleAndEmbed = controller.getAllIndividualSelectionStylesAndEmbed();
 
     final selection = textEditingValue.selection;
     final text = textEditingValue.text;
@@ -1319,7 +1514,7 @@ class RawEditorState extends EditorState
   void cutSelection(SelectionChangedCause cause) {
     controller.copiedImageUrl = null;
     _pastePlainText = controller.getPlainText();
-    _pasteStyle = controller.getAllIndividualSelectionStyles();
+    _pasteStyleAndEmbed = controller.getAllIndividualSelectionStylesAndEmbed();
 
     if (widget.readOnly) {
       return;
@@ -1349,11 +1544,10 @@ class RawEditorState extends EditorState
       final index = textEditingValue.selection.baseOffset;
       final length = textEditingValue.selection.extentOffset - index;
       final copied = controller.copiedImageUrl!;
-      controller.replaceText(
-          index, length, BlockEmbed.image(copied.item1), null);
-      if (copied.item2.isNotEmpty) {
-        controller.formatText(getEmbedNode(controller, index + 1).item1, 1,
-            StyleAttribute(copied.item2));
+      controller.replaceText(index, length, BlockEmbed.image(copied.url), null);
+      if (copied.styleString.isNotEmpty) {
+        controller.formatText(getEmbedNode(controller, index + 1).offset, 1,
+            StyleAttribute(copied.styleString));
       }
       controller.copiedImageUrl = null;
       await Clipboard.setData(const ClipboardData(text: ''));
@@ -1570,11 +1764,13 @@ class RawEditorState extends EditorState
     RedoTextIntent: _makeOverridable(_RedoKeyboardAction(this)),
 
     OpenSearchIntent: _openSearchAction,
+
     // Selection Formatting
     ToggleTextStyleIntent: _formatSelectionAction,
     IndentSelectionIntent: _indentSelectionAction,
     ApplyHeaderIntent: _applyHeaderAction,
     ApplyCheckListIntent: _applyCheckListAction,
+    ApplyLinkIntent: ApplyLinkAction(this)
   };
 
   @override
@@ -1608,17 +1804,12 @@ class RawEditorState extends EditorState
   }
 
   @override
-  void insertContent(KeyboardInsertedContent content) {
-    // TODO: implement insertContent
-  }
-
-  @override
   // TODO: implement liveTextInputEnabled
-  bool get liveTextInputEnabled => true;
+  bool get liveTextInputEnabled => false;
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
-  _Editor({
+  const _Editor({
     required Key key,
     required List<Widget> children,
     required this.document,
@@ -2503,6 +2694,43 @@ class _ApplyCheckListAction extends Action<ApplyCheckListIntent> {
   bool get isActionEnabled => true;
 }
 
+class ApplyLinkIntent extends Intent {
+  const ApplyLinkIntent();
+}
+
+class ApplyLinkAction extends Action<ApplyLinkIntent> {
+  ApplyLinkAction(this.state);
+
+  final RawEditorState state;
+
+  @override
+  Object? invoke(ApplyLinkIntent intent) async {
+    final initialTextLink = QuillTextLink.prepare(state.controller);
+
+    final textLink = await showDialog<QuillTextLink>(
+      context: state.context,
+      builder: (context) {
+        return LinkStyleDialog(
+          text: initialTextLink.text,
+          link: initialTextLink.link,
+          dialogTheme: state.widget.dialogTheme,
+        );
+      },
+    );
+
+    if (textLink != null) {
+      textLink.submit(state.controller);
+    }
+    return null;
+  }
+}
+
+class InsertEmbedIntent extends Intent {
+  const InsertEmbedIntent(this.type);
+
+  final Attribute type;
+}
+
 /// Signature for a widget builder that builds a context menu for the given
 /// [RawEditorState].
 ///
@@ -2514,3 +2742,13 @@ typedef QuillEditorContextMenuBuilder = Widget Function(
   BuildContext context,
   RawEditorState rawEditorState,
 );
+
+class _GlyphHeights {
+  _GlyphHeights(
+    this.startGlyphHeight,
+    this.endGlyphHeight,
+  );
+
+  final double startGlyphHeight;
+  final double endGlyphHeight;
+}

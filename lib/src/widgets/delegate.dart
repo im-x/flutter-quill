@@ -3,18 +3,19 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-import '../../flutter_quill.dart';
+import '../models/documents/attribute.dart';
+import '../models/documents/nodes/leaf.dart';
 import '../utils/platform.dart';
+import 'editor.dart';
+import 'embeds.dart';
 import 'text_selection.dart';
 
-typedef EmbedsBuilder = Widget Function(
-  BuildContext context,
-  QuillController controller,
-  Embed node,
-  bool readOnly,
-);
+typedef EmbedsBuilder = EmbedBuilder Function(Embed node);
 
 typedef CustomStyleBuilder = TextStyle Function(Attribute attribute);
+
+typedef CustomRecognizerBuilder = GestureRecognizer? Function(
+    Attribute attribute, Leaf leaf);
 
 /// Delegate interface for the [EditorTextSelectionGestureDetectorBuilder].
 ///
@@ -316,7 +317,8 @@ class EditorTextSelectionGestureDetectorBuilder {
   ///  which triggers this callback./lib/src/material/text_field.dart
   @protected
   void onDragSelectionUpdate(
-      DragStartDetails startDetails, DragUpdateDetails updateDetails) {
+      //DragStartDetails startDetails,
+      DragUpdateDetails updateDetails) {
     renderEditor!.extendSelection(updateDetails.globalPosition,
         cause: SelectionChangedCause.drag);
   }

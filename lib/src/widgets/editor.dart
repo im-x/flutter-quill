@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 // ignore: unnecessary_import
 import 'dart:typed_data';
 
@@ -9,13 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:i18n_extension/i18n_widget.dart';
-import 'package:tuple/tuple.dart';
 
 import '../models/documents/document.dart';
 import '../models/documents/nodes/container.dart' as container_node;
-import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart';
-import '../models/documents/style.dart';
+import '../models/structs/offset_value.dart';
+import '../models/themes/quill_dialog_theme.dart';
 import '../utils/platform.dart';
 import '../utils/quill_data.dart';
 import 'box.dart';
@@ -39,13 +39,16 @@ abstract class EditorState extends State<RawEditor>
 
   EditorTextSelectionOverlay? get selectionOverlay;
 
-  List<Tuple2<int, Style>> get pasteStyle;
+  List<OffsetValue> get pasteStyleAndEmbed;
 
   String get pastePlainText;
 
   /// Controls the floating cursor animation when it is released.
   /// The floating cursor is animated to merge with the regular cursor.
   AnimationController get floatingCursorResetController;
+
+  /// Returns true if the editor has been marked as needing to be rebuilt.
+  bool get dirty;
 
   bool showToolbar();
 
@@ -232,55 +235,67 @@ abstract class RenderAbstractEditor implements TextLayoutMetrics {
 // }
 
 class QuillEditor extends StatefulWidget {
-  const QuillEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollable,
-      required this.padding,
-      required this.autoFocus,
-      required this.readOnly,
-      required this.expands,
-      this.showCursor,
-      this.paintCursorAboveText,
-      this.placeholder,
-      this.enableInteractiveSelection = true,
-      this.enableSelectionToolbar = true,
-      this.scrollBottomInset = 0,
-      this.minHeight,
-      this.maxHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.textCapitalization = TextCapitalization.sentences,
-      this.keyboardAppearance = Brightness.light,
-      this.scrollPhysics,
-      this.onLaunchUrl,
-      this.onTapDown,
-      this.onTapUp,
-      this.onSingleLongTapStart,
-      this.onSingleLongTapMoveUpdate,
-      this.onSingleLongTapEnd,
-      this.embedBuilders,
-      this.unknownEmbedBuilder,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.locale,
-      this.floatingCursorDisabled = false,
-      this.onSubmitted,
-      this.isSimpleInput,
-      this.textSelectionControls,
-      this.onImagePaste,
-      this.customShortcuts,
-      this.customActions,
-      this.detectWordBoundary = true,
-      Key? key})
-      : super(key: key);
+  const QuillEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollable,
+    required this.padding,
+    required this.autoFocus,
+    required this.readOnly,
+    required this.expands,
+    this.showCursor,
+    this.paintCursorAboveText,
+    this.placeholder,
+    this.enableInteractiveSelection = true,
+    this.enableSelectionToolbar = true,
+    this.scrollBottomInset = 0,
+    this.minHeight,
+    this.maxHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.textCapitalization = TextCapitalization.sentences,
+    this.keyboardAppearance = Brightness.light,
+    this.scrollPhysics,
+    this.onLaunchUrl,
+    this.onTapDown,
+    this.onTapUp,
+    this.onSingleLongTapStart,
+    this.onSingleLongTapMoveUpdate,
+    this.onSingleLongTapEnd,
+    this.embedBuilders,
+    this.unknownEmbedBuilder,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.customRecognizerBuilder,
+    this.locale,
+    this.floatingCursorDisabled = false,
+    this.onSubmitted,
+    this.isSimpleInput,
+    this.textSelectionControls,
+    this.onImagePaste,
+    this.customShortcuts,
+    this.customActions,
+    this.detectWordBoundary = true,
+    this.enableUnfocusOnTapOutside = true,
+    this.customLinkPrefixes = const <String>[],
+    this.dialogTheme,
+    this.contentInsertionConfiguration,
+    this.contextMenuBuilder,
+    Key? key,
+  }) : super(key: key);
 
   factory QuillEditor.basic({
     required QuillController controller,
     required bool readOnly,
     Brightness? keyboardAppearance,
     Iterable<EmbedBuilder>? embedBuilders,
+    final EmbedBuilder? unknownEmbedBuilder,
+    EdgeInsetsGeometry padding = EdgeInsets.zero,
+    bool autoFocus = true,
+    bool expands = false,
+    FocusNode? focusNode,
+    String? placeholder,
 
     /// The locale to use for the editor toolbar, defaults to system locale
     /// More at https://github.com/singerdmx/flutter-quill#translation
@@ -290,14 +305,16 @@ class QuillEditor extends StatefulWidget {
       controller: controller,
       scrollController: ScrollController(),
       scrollable: true,
-      focusNode: FocusNode(),
-      autoFocus: true,
+      focusNode: focusNode ?? FocusNode(),
+      autoFocus: autoFocus,
       readOnly: readOnly,
-      expands: false,
-      padding: EdgeInsets.zero,
+      expands: expands,
+      padding: padding,
       keyboardAppearance: keyboardAppearance ?? Brightness.light,
       locale: locale,
       embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
+      placeholder: placeholder,
     );
   }
 
@@ -310,6 +327,8 @@ class QuillEditor extends StatefulWidget {
     bool? isSimpleInput,
     DefaultStyles? customStyles,
     ScrollPhysics? scrollPhysics,
+    final Iterable<EmbedBuilder>? embedBuilders,
+    final EmbedBuilder? unknownEmbedBuilder,
     Key? key,
   }) {
     return QuillEditor(
@@ -328,6 +347,8 @@ class QuillEditor extends StatefulWidget {
       isSimpleInput: isSimpleInput,
       customStyles: customStyles,
       onSubmitted: onSubmitted,
+      embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
       key: key,
     );
   }
@@ -366,6 +387,9 @@ class QuillEditor extends StatefulWidget {
   ///
   /// Defaults to `false`. Cannot be `null`.
   final bool autoFocus;
+
+  /// Whether focus should be revoked on tap outside the editor.
+  final bool enableUnfocusOnTapOutside;
 
   /// Whether to show cursor.
   ///
@@ -419,6 +443,7 @@ class QuillEditor extends StatefulWidget {
   /// horizontally centered. This is mostly useful on devices with wide screens.
   final double? maxContentWidth;
 
+  /// Allows to override [DefaultStyles].
   final DefaultStyles? customStyles;
 
   /// Whether this editor's height will be sized to fill its parent.
@@ -478,14 +503,16 @@ class QuillEditor extends StatefulWidget {
   // Returns whether gesture is handled
   final bool Function(LongPressMoveUpdateDetails details,
       TextPosition Function(Offset offset))? onSingleLongTapMoveUpdate;
+
   // Returns whether gesture is handled
   final bool Function(
           LongPressEndDetails details, TextPosition Function(Offset offset))?
       onSingleLongTapEnd;
 
   final Iterable<EmbedBuilder>? embedBuilders;
-  final EmbedsBuilder? unknownEmbedBuilder;
+  final EmbedBuilder? unknownEmbedBuilder;
   final CustomStyleBuilder? customStyleBuilder;
+  final CustomRecognizerBuilder? customRecognizerBuilder;
 
   /// The locale to use for the editor toolbar, defaults to system locale
   /// More https://github.com/singerdmx/flutter-quill#translation
@@ -521,10 +548,35 @@ class QuillEditor extends StatefulWidget {
   /// Returns the url of the image if the image should be inserted.
   final Future<String?> Function(Uint8List imageBytes)? onImagePaste;
 
-  final Map<LogicalKeySet, Intent>? customShortcuts;
+  /// Contains user-defined shortcuts map.
+  ///
+  /// [https://docs.flutter.dev/development/ui/advanced/actions-and-shortcuts#shortcuts]
+  final Map<ShortcutActivator, Intent>? customShortcuts;
+
+  /// Contains user-defined actions.
+  ///
+  /// [https://docs.flutter.dev/development/ui/advanced/actions-and-shortcuts#actions]
   final Map<Type, Action<Intent>>? customActions;
 
   final bool detectWordBoundary;
+
+  /// Additional list if links prefixes, which must not be prepended
+  /// with "https://" when [LinkMenuAction.launch] happened
+  ///
+  /// Useful for deeplinks
+  final List<String> customLinkPrefixes;
+
+  /// Configures the dialog theme.
+  final QuillDialogTheme? dialogTheme;
+
+  // Allows for creating a custom context menu
+  final QuillEditorContextMenuBuilder? contextMenuBuilder;
+
+  /// Configuration of handler for media content inserted via the system input
+  /// method.
+  ///
+  /// See [https://api.flutter.dev/flutter/widgets/EditableText/contentInsertionConfiguration.html]
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
 
   @override
   QuillEditorState createState() => QuillEditorState();
@@ -591,8 +643,9 @@ class QuillEditorState extends State<QuillEditor>
       readOnly: widget.readOnly,
       placeholder: widget.placeholder,
       onLaunchUrl: widget.onLaunchUrl,
-      contextMenuBuilder:
-          showSelectionToolbar ? RawEditor.defaultContextMenuBuilder : null,
+      contextMenuBuilder: showSelectionToolbar
+          ? (widget.contextMenuBuilder ?? RawEditor.defaultContextMenuBuilder)
+          : null,
       showSelectionHandles: isMobile(theme.platform),
       showCursor: widget.showCursor,
       cursorStyle: CursorStyle(
@@ -617,27 +670,20 @@ class QuillEditorState extends State<QuillEditor>
       keyboardAppearance: widget.keyboardAppearance,
       enableInteractiveSelection: widget.enableInteractiveSelection,
       scrollPhysics: widget.scrollPhysics,
-      embedBuilder: (
-        context,
-        controller,
-        node,
-        readOnly,
-      ) =>
-          _buildCustomBlockEmbed(
-        node,
-        context,
-        controller,
-        readOnly,
-        widget.unknownEmbedBuilder,
-      ),
+      embedBuilder: _getEmbedBuilder,
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
+      customRecognizerBuilder: widget.customRecognizerBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
       onSubmitted: widget.onSubmitted,
       isSimpleInput: widget.isSimpleInput,
       onImagePaste: widget.onImagePaste,
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
+      customLinkPrefixes: widget.customLinkPrefixes,
+      enableUnfocusOnTapOutside: widget.enableUnfocusOnTapOutside,
+      dialogTheme: widget.dialogTheme,
+      contentInsertionConfiguration: widget.contentInsertionConfiguration,
     );
 
     final editor = I18n(
@@ -668,39 +714,27 @@ class QuillEditorState extends State<QuillEditor>
     return editor;
   }
 
-  Widget _buildCustomBlockEmbed(
-    Embed node,
-    BuildContext context,
-    QuillController controller,
-    bool readOnly,
-    EmbedsBuilder? unknownEmbedBuilder,
-  ) {
+  EmbedBuilder _getEmbedBuilder(Embed node) {
     final builders = widget.embedBuilders;
-
-    var _node = node;
-    // Creates correct node for custom embed
-    if (node.value.type == BlockEmbed.customType) {
-      _node = Embed(CustomBlockEmbed.fromJsonString(node.value.data));
-    }
 
     if (builders != null) {
       for (final builder in builders) {
-        if (builder.key == _node.value.type) {
-          return builder.build(context, controller, _node, readOnly);
+        if (builder.key == node.value.type) {
+          return builder;
         }
       }
     }
 
-    if (unknownEmbedBuilder != null) {
-      return unknownEmbedBuilder(context, controller, _node, readOnly);
+    if (widget.unknownEmbedBuilder != null) {
+      return widget.unknownEmbedBuilder!;
     }
 
-    if (node.value.type == 'emoji' ||
-        node.value.type == 'mention' ||
-        node.value.type == 'topic' ||
-        node.value.type == 'edited') {
-      return (node.value as InlineEmbed).getEmbedWidget(canClick: !readOnly);
-    }
+    // if (node.value.type == 'emoji' ||
+    //     node.value.type == 'mention' ||
+    //     node.value.type == 'topic' ||
+    //     node.value.type == 'edited') {
+    //   return (node.value as InlineEmbed).getEmbedWidget(canClick: !readOnly);
+    // }
 
     throw UnimplementedError(
       'Embeddable type "${node.value.type}" is not supported by supplied '
@@ -810,11 +844,11 @@ class _QuillEditorSelectionGestureDetectorBuilder
     final pos = renderEditor!.getPositionForOffset(details.globalPosition);
     final result =
         editor!.widget.controller.document.querySegmentLeafNode(pos.offset);
-    final line = result.item1;
+    final line = result.line;
     if (line == null) {
       return false;
     }
-    final segmentLeaf = result.item2;
+    final segmentLeaf = result.leaf;
     if (segmentLeaf == null && line.length == 1) {
       editor!.widget.controller.updateSelection(
           TextSelection.collapsed(offset: pos.offset), ChangeSource.LOCAL);
@@ -1175,6 +1209,7 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   double? _maxContentWidth;
+
   set maxContentWidth(double? value) {
     if (_maxContentWidth == value) return;
     _maxContentWidth = value;
@@ -1187,7 +1222,9 @@ class RenderEditor extends RenderEditableContainerBox
     if (textSelection.isCollapsed) {
       final child = childAtPosition(textSelection.extent);
       final localPosition = TextPosition(
-          offset: textSelection.extentOffset - child.container.offset);
+        offset: textSelection.extentOffset - child.container.offset,
+        affinity: textSelection.affinity,
+      );
       final localOffset = child.getOffsetForCaret(localPosition);
       final parentData = child.parentData as BoxParentData;
       return <TextSelectionPoint>[
@@ -2024,7 +2061,10 @@ class RenderEditableContainerBox extends RenderBox
       dy += child.size.height;
       child = childAfter(child);
     }
-    throw StateError('No child at offset $offset.');
+
+    // this case possible, when editor not scrollable,
+    // but minHeight > content height and tap was under content
+    return lastChild!;
   }
 
   @override
