@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/flutter_quill_test.dart';
+import 'package:flutter_quill/src/widgets/custom/custom_adaptive_text_selection_toolbar.dart';
 import 'package:flutter_quill/src/widgets/raw_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -82,7 +83,7 @@ void main() {
     });
 
     Widget customBuilder(BuildContext context, RawEditorState state) {
-      return AdaptiveTextSelectionToolbar(
+      return CustomAdaptiveTextSelectionToolbar(
         anchors: state.contextMenuAnchors,
         children: [
           Container(

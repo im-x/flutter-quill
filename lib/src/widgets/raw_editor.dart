@@ -29,6 +29,7 @@ import '../utils/embeds.dart';
 import '../utils/platform.dart';
 import 'controller.dart';
 import 'cursor.dart';
+import 'custom/custom_adaptive_text_selection_toolbar.dart';
 import 'default_styles.dart';
 import 'delegate.dart';
 import 'editor.dart';
@@ -134,7 +135,7 @@ class RawEditor extends StatefulWidget {
     RawEditorState state,
   ) {
     return TextFieldTapRegion(
-      child: AdaptiveTextSelectionToolbar.buttonItems(
+      child: CustomAdaptiveTextSelectionToolbar.buttonItems(
         buttonItems: state.contextMenuButtonItems,
         anchors: state.contextMenuAnchors,
       ),
