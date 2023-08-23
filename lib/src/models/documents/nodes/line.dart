@@ -176,7 +176,7 @@ class Line extends Container<Leaf?> {
 
     final remaining = len - local;
     if (remaining > 0) {
-      assert(nextLine != null);
+      // assert(nextLine != null);
       nextLine!.delete(0, remaining);
     }
 

@@ -283,6 +283,10 @@ class Embed extends Leaf {
       return unknownEmbedBuilder.toPlainText(this);
     }
 
+    if (value is InlineEmbed) {
+      return value.toString();
+    }
+
     return Embed.kObjectReplacementCharacter;
   }
 

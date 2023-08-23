@@ -79,26 +79,11 @@ class InlineEmbed extends Embeddable {
 
   static const topicName = 'topic';
   static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
-  static String getTopicHtml(String name) {
-    return '<p>[#$name#]</p>';
-  }
+  static String getTopicHtml(String name) => '<p>[#$name#]</p>';
 
   static const editName = 'edited';
   static InlineEmbed edit(String name) => InlineEmbed(editName, name);
-  static String getEditHtml(String name) {
-    return '[%$name%]';
-  }
-
-  Widget getEmbedWidget({
-    bool canClick = true,
-  }) {
-    return QuillData.getInlineEmbedWidget?.call(this, canClick: canClick) ??
-        const SizedBox.shrink();
-  }
-
-  bool onTap() {
-    return QuillData.onInlineEmbedTap?.call(this) == true;
-  }
+  static String getEditHtml(String name) => '[%$name%]';
 
   @override
   String toString() {
@@ -119,8 +104,7 @@ class InlineEmbed extends Embeddable {
       }
     } else if (type == topicName) {
       return '#${data.toString()}#';
-    } else {
-      return '';
     }
+    return '';
   }
 }

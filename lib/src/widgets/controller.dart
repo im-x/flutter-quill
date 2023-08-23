@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,7 @@ import '../models/structs/doc_change.dart';
 import '../models/structs/image_url.dart';
 import '../models/structs/offset_value.dart';
 import '../utils/delta.dart';
+import 'embeds.dart';
 
 typedef ReplaceTextCallback = bool Function(int index, int len, Object? data);
 typedef DeleteCallback = void Function(int cursorPosition, bool forward);
@@ -26,17 +28,23 @@ class QuillController extends ChangeNotifier {
     this.onDelete,
     this.onSelectionCompleted,
     this.onSelectionChanged,
+    this.embedBuilders,
+    this.unknownEmbedBuilder,
   })  : _document = document,
         _selection = selection,
         _keepStyleOnNewLine = keepStyleOnNewLine;
 
   factory QuillController.basic({
     bool keepStyleOnNewLine = false,
+    Iterable<EmbedBuilder>? embedBuilders,
+    EmbedBuilder? unknownEmbedBuilder,
   }) {
     return QuillController(
       document: Document(),
       keepStyleOnNewLine: keepStyleOnNewLine,
       selection: const TextSelection.collapsed(offset: 0),
+      embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
     );
   }
 
@@ -76,6 +84,9 @@ class QuillController extends ChangeNotifier {
     notifyListeners();
   }
 
+  final Iterable<EmbedBuilder>? embedBuilders;
+  final EmbedBuilder? unknownEmbedBuilder;
+
   /// Tells whether to keep or reset the [toggledStyle]
   /// when user adds a new line.
   final bool _keepStyleOnNewLine;
@@ -114,7 +125,7 @@ class QuillController extends ChangeNotifier {
   Stream<DocChange> get changes => document.changes;
 
   TextEditingValue get plainTextEditingValue => TextEditingValue(
-        text: document.toPlainText(),
+        text: document.toPlainText(embedBuilders, unknownEmbedBuilder),
         selection: selection,
       );
 
@@ -280,6 +291,23 @@ class QuillController extends ChangeNotifier {
   void clear() {
     replaceText(0, plainTextEditingValue.text.length - 1, '',
         const TextSelection.collapsed(offset: 0));
+  }
+
+  void deleteOne() {
+    if (document.length == 0) {
+      clear();
+      return;
+    }
+
+    // ignoreFocusOnTextChange = true;
+    replaceText(
+      max(0, document.length - 2),
+      1,
+      '',
+      selection.copyWith(extentOffset: selection.extentOffset - 1),
+      ignoreFocus: true,
+    );
+    // ignoreFocusOnTextChange = false;
   }
 
   void replaceText(
