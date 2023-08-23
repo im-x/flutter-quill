@@ -324,11 +324,11 @@ class RawEditorState extends EditorState
   // for pasting style
   @override
   List<OffsetValue> get pasteStyleAndEmbed => _pasteStyleAndEmbed;
-  List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
+  static List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
 
   @override
   String get pastePlainText => _pastePlainText;
-  String _pastePlainText = '';
+  static String _pastePlainText = '';
 
   final ClipboardStatusNotifier _clipboardStatus = ClipboardStatusNotifier();
   final LayerLink _toolbarLayerLink = LayerLink();

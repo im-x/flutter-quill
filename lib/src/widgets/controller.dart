@@ -125,7 +125,7 @@ class QuillController extends ChangeNotifier {
   Stream<DocChange> get changes => document.changes;
 
   TextEditingValue get plainTextEditingValue => TextEditingValue(
-        text: document.toPlainText(embedBuilders, unknownEmbedBuilder),
+        text: document.toPlainText(),
         selection: selection,
       );
 
@@ -215,6 +215,16 @@ class QuillController extends ChangeNotifier {
   String getPlainText() {
     final text =
         document.getPlainText(selection.start, selection.end - selection.start);
+    return text;
+  }
+
+  String getCopyPlainText() {
+    final text = document.getPlainText(
+      selection.start,
+      selection.end - selection.start,
+      embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
+    );
     return text;
   }
 

@@ -194,9 +194,19 @@ class Document {
   }
 
   /// Returns plain text within the specified text range.
-  String getPlainText(int index, int len) {
+  String getPlainText(
+    int index,
+    int len, {
+    Iterable<EmbedBuilder>? embedBuilders,
+    EmbedBuilder? unknownEmbedBuilder,
+  }) {
     final res = queryChild(index);
-    return (res.node as Line).getPlainText(res.offset, len);
+    return (res.node as Line).getPlainText(
+      res.offset,
+      len,
+      embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
+    );
   }
 
   /// Returns [Line] located at specified character [offset].

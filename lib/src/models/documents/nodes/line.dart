@@ -176,7 +176,7 @@ class Line extends Container<Leaf?> {
 
     final remaining = len - local;
     if (remaining > 0) {
-      // assert(nextLine != null);
+      assert(nextLine != null);
       nextLine!.delete(0, remaining);
     }
 
@@ -512,15 +512,37 @@ class Line extends Container<Leaf?> {
   }
 
   /// Returns plain text within the specified text range.
-  String getPlainText(int offset, int len) {
+  String getPlainText(
+    int offset,
+    int len, {
+    Iterable<EmbedBuilder>? embedBuilders,
+    EmbedBuilder? unknownEmbedBuilder,
+  }) {
     final plainText = StringBuffer();
-    _getPlainText(offset, len, plainText);
+    _getPlainText(
+      offset,
+      len,
+      plainText,
+      embedBuilders: embedBuilders,
+      unknownEmbedBuilder: unknownEmbedBuilder,
+    );
     return plainText.toString();
   }
 
-  int _getNodeText(Leaf node, StringBuffer buffer, int offset, int remaining) {
-    final text = node.toPlainText();
+  int _getNodeText(
+    Leaf node,
+    StringBuffer buffer,
+    int offset,
+    int remaining, {
+    Iterable<EmbedBuilder>? embedBuilders,
+    EmbedBuilder? unknownEmbedBuilder,
+  }) {
+    final text = node.toPlainText(embedBuilders, unknownEmbedBuilder);
     if (text == Embed.kObjectReplacementCharacter) {
+      return remaining - node.length;
+    }
+    if (node is Embed && node.value is InlineEmbed) {
+      buffer.write(text);
       return remaining - node.length;
     }
 
@@ -529,7 +551,13 @@ class Line extends Container<Leaf?> {
     return remaining - (end - offset);
   }
 
-  int _getPlainText(int offset, int len, StringBuffer plainText) {
+  int _getPlainText(
+    int offset,
+    int len,
+    StringBuffer plainText, {
+    Iterable<EmbedBuilder>? embedBuilders,
+    EmbedBuilder? unknownEmbedBuilder,
+  }) {
     var _len = len;
     final data = queryChild(offset, false);
     var node = data.node as Leaf?;
@@ -540,11 +568,25 @@ class Line extends Container<Leaf?> {
         plainText.write('\n');
         _len -= 1;
       } else {
-        _len = _getNodeText(node, plainText, offset - node.offset, _len);
+        _len = _getNodeText(
+          node,
+          plainText,
+          offset - node.offset,
+          _len,
+          embedBuilders: embedBuilders,
+          unknownEmbedBuilder: unknownEmbedBuilder,
+        );
 
         while (!node!.isLast && _len > 0) {
           node = node.next as Leaf;
-          _len = _getNodeText(node, plainText, 0, _len);
+          _len = _getNodeText(
+            node,
+            plainText,
+            0,
+            _len,
+            embedBuilders: embedBuilders,
+            unknownEmbedBuilder: unknownEmbedBuilder,
+          );
         }
 
         if (_len > 0) {
@@ -555,7 +597,13 @@ class Line extends Container<Leaf?> {
       }
 
       if (_len > 0 && nextLine != null) {
-        _len = nextLine!._getPlainText(0, _len, plainText);
+        _len = nextLine!._getPlainText(
+          0,
+          _len,
+          plainText,
+          embedBuilders: embedBuilders,
+          unknownEmbedBuilder: unknownEmbedBuilder,
+        );
       }
     }
 
