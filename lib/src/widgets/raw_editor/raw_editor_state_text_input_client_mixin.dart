@@ -54,6 +54,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
         this,
         (widget.isSimpleInput != null && widget.isSimpleInput! == true)
             ? TextInputConfiguration(
+                inputType: TextInputType.multiline,
                 readOnly: widget.readOnly,
                 inputAction: TextInputAction.send,
                 enableSuggestions: !widget.readOnly,
@@ -194,7 +195,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     final effectiveLastKnownValue = _lastKnownRemoteTextEditingValue!;
     _lastKnownRemoteTextEditingValue = value;
     final oldText = effectiveLastKnownValue.text;
-    final text = value.text;
+    final text = value.text.replaceAll('\r', '\n');
     final cursorPosition = value.selection.extentOffset;
     final diff = getDiff(oldText, text, cursorPosition);
     if (diff.deleted.isEmpty && diff.inserted.isEmpty) {
