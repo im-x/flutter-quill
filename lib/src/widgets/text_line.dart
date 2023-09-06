@@ -400,7 +400,8 @@ class _TextLineState extends State<TextLine> {
     final background = textNode.style.attributes[Attribute.background.key];
     if (background != null && background.value != null) {
       final backgroundColor = stringToColor(background.value);
-      res = res.merge(TextStyle(backgroundColor: backgroundColor));
+      res = res
+          .merge(TextStyle(backgroundColor: backgroundColor.withOpacity(0.1)));
     }
 
     res = _applyCustomAttributes(res, textNode.style.attributes);

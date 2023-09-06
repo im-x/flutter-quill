@@ -185,6 +185,14 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
     }
   }
 
+  void _insertContainerText({
+    required Delta delta,
+    required String className,
+    required String text,
+  }) {
+    delta.insert(InlineEmbed.containerText(className, text));
+  }
+
   void _insertText({
     required Delta delta,
     required String text,
@@ -360,14 +368,27 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
         if (color != null) {
           attributes[Attribute.color.key] = color;
         }
+        final backgroundColor = _getStyleBackgroundColor(style);
+        if (backgroundColor != null) {
+          attributes[Attribute.background.key] = backgroundColor;
+        }
       }
 
       if (element.children.isEmpty) {
-        _insertText(
-          delta: delta,
-          text: element.text,
-          attributes: attributes,
-        );
+        if (element.localName == 'span' &&
+            _getSpanClassName(element.className) != null) {
+          _insertContainerText(
+            delta: delta,
+            className: element.className,
+            text: element.text,
+          );
+        } else {
+          _insertText(
+            delta: delta,
+            text: element.text,
+            attributes: attributes,
+          );
+        }
 
         if (attributes[Attribute.link.key] != null) {
           delta.insert(' ');
@@ -384,6 +405,39 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       }
       return delta;
     }
+  }
+
+  String? _getStyleBackgroundColor(String? style) {
+    if (style == null) {
+      return null;
+    }
+    if (QuillData.kHexBackgroundColorRegex.hasMatch(style)) {
+      final matches = QuillData.kHexColorRegex.allMatches(style);
+      if (matches.isEmpty) return null;
+
+      final firstMatch = matches.first;
+      if (firstMatch.groupCount != 1) return null;
+
+      return firstMatch.group(1);
+    }
+
+    if (QuillData.kRgbBackgroundColorRegex.hasMatch(style)) {
+      final matches = QuillData.kRgbColorRegex.allMatches(style);
+      if (matches.isEmpty) return null;
+
+      final match = matches.first;
+      if (match.groupCount != 3) return null;
+
+      try {
+        final color = '#'
+            '${getHex(match.group(1)!)}'
+            '${getHex(match.group(2)!)}'
+            '${getHex(match.group(3)!)}';
+        return color;
+      } catch (e) {}
+    }
+
+    return null;
   }
 
   String? _getStyleHexColor(String? style) {
@@ -440,5 +494,18 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       // ignore: empty_catches
     } catch (e) {}
     return 0;
+  }
+
+  String? _getSpanClassName(String className) {
+    if (className.isEmpty ||
+        !className.startsWith('msgcard_container_text') ||
+        className.contains(' ')) {
+      return null;
+    }
+    try {
+      return className;
+    } catch (e) {
+      return null;
+    }
   }
 }

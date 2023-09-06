@@ -85,6 +85,10 @@ class InlineEmbed extends Embeddable {
   static InlineEmbed edit(String name) => InlineEmbed(editName, name);
   static String getEditHtml(String name) => '[%$name%]';
 
+  static const containerTextName = 'container_text';
+  static InlineEmbed containerText(String className, String text) =>
+      InlineEmbed(containerTextName, {'class': className, 'text': text});
+
   @override
   String toString() {
     if (type == emojiName) {

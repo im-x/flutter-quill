@@ -14,8 +14,16 @@ class QuillData {
     r'color:\s?(#[0-9a-fA-F]{6,8})',
   );
 
+  static RegExp kHexBackgroundColorRegex = RegExp(
+    r'background-color:\s?(#[0-9a-fA-F]{6,8})',
+  );
+
   static RegExp kRgbColorRegex = RegExp(
     r'color:\s?rgb\((\d+), (\d+), (\d+)\)',
+  );
+
+  static RegExp kRgbBackgroundColorRegex = RegExp(
+    r'background-color:\s?rgb\((\d+), (\d+), (\d+)\)',
   );
 
   static RegExp kInlineEmbedRegex = RegExp(
