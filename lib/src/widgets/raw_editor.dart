@@ -330,6 +330,17 @@ class RawEditorState extends EditorState
   String get pastePlainText => _pastePlainText;
   static String _pastePlainText = '';
 
+  static void setFromOuterDocument(Document doc) {
+    const start = 0;
+    final end = doc.length;
+    try {
+      final plainText = doc.getPlainText(0, end);
+      final styleAndEmbed = doc.collectAllIndividualStyleAndEmbed(start, end);
+      _pastePlainText = plainText;
+      _pasteStyleAndEmbed = styleAndEmbed;
+    } catch (e) {}
+  }
+
   final ClipboardStatusNotifier _clipboardStatus = ClipboardStatusNotifier();
   final LayerLink _toolbarLayerLink = LayerLink();
   final LayerLink _startHandleLayerLink = LayerLink();
