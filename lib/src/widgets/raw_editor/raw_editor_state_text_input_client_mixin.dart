@@ -210,7 +210,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
   void performAction(TextInputAction action) {
     switch (action) {
       case TextInputAction.send:
-        _finalizeEditing(action, shouldUnfocus: true);
+        _finalizeEditing(action, shouldUnfocus: false);
         break;
       default:
         break;
