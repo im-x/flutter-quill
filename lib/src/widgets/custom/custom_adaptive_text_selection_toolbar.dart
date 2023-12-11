@@ -107,7 +107,10 @@ class CustomAdaptiveTextSelectionToolbar extends StatelessWidget {
             onCut: onCut,
             onPaste: onPaste,
             onSelectAll: onSelectAll,
-            onLiveTextInput: onLiveTextInput);
+            onLiveTextInput: onLiveTextInput,
+            onLookUp: () {},
+            onSearchWeb: () {},
+            onShare: () {});
 
   /// Create an instance of [CustomAdaptiveTextSelectionToolbar] with the default
   /// children for an [EditableText].
@@ -214,6 +217,9 @@ class CustomAdaptiveTextSelectionToolbar extends StatelessWidget {
           case ContextMenuButtonType.liveTextInput:
             return localizations.scanTextButtonLabel;
           case ContextMenuButtonType.custom:
+          case ContextMenuButtonType.lookUp:
+          case ContextMenuButtonType.searchWeb:
+          case ContextMenuButtonType.share:
             return '';
         }
     }

@@ -109,6 +109,9 @@ class CustomCupertinoTextSelectionToolbarButton extends StatefulWidget {
       case ContextMenuButtonType.liveTextInput:
       case ContextMenuButtonType.delete:
       case ContextMenuButtonType.custom:
+      case ContextMenuButtonType.lookUp:
+      case ContextMenuButtonType.searchWeb:
+      case ContextMenuButtonType.share:
         return '';
     }
   }
@@ -195,6 +198,9 @@ class _CustomCupertinoTextSelectionToolbarButtonState
       case ContextMenuButtonType.selectAll:
       case ContextMenuButtonType.delete:
       case ContextMenuButtonType.custom:
+      case ContextMenuButtonType.lookUp:
+      case ContextMenuButtonType.searchWeb:
+      case ContextMenuButtonType.share:
         return textWidget;
       case ContextMenuButtonType.liveTextInput:
         return SizedBox(
