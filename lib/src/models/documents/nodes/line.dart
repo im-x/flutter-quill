@@ -73,6 +73,9 @@ base class Line extends QuillContainer<Leaf?> {
       '${super.toPlainText(embedBuilders, unknownEmbedBuilder)}\n';
 
   @override
+  String toRawText() => '${super.toRawText()}\n';
+
+  @override
   String toString() {
     final body = children.join(' → ');
     final styleString = style.isNotEmpty ? ' $style' : '';
@@ -520,6 +523,10 @@ base class Line extends QuillContainer<Leaf?> {
   int _getNodeText(Leaf node, StringBuffer buffer, int offset, int remaining) {
     final text = node.toPlainText();
     if (text == Embed.kObjectReplacementCharacter) {
+      return remaining - node.length;
+    }
+    if (node is Embed && node.value is InlineEmbed) {
+      buffer.write(text);
       return remaining - node.length;
     }
 

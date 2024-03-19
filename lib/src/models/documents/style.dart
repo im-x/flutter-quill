@@ -52,7 +52,15 @@ class Style {
 
   Attribute get single => _attributes.values.single;
 
+  bool contains(Attribute key) => _attributes.containsKey(key.key);
+
   bool containsKey(String key) => _attributes.containsKey(key);
+
+  bool containsSame(Attribute attr) => get<dynamic>(attr) == attr;
+
+  T? value<T>(Attribute<T> key) => get(key)?.value;
+
+  Attribute? get<T>(Attribute<T> key) => _attributes[key.key];
 
   Attribute? getBlockExceptHeader() {
     for (final val in values) {

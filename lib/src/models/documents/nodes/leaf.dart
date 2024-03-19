@@ -226,6 +226,9 @@ base class QuillText extends Leaf {
     EmbedBuilder? unknownEmbedBuilder,
   ]) =>
       value;
+
+  @override
+  String toRawText() => value;
 }
 
 /// An embed node inside of a line in a Quill document.
@@ -278,6 +281,9 @@ base class Embed extends Leaf {
 
     return Embed.kObjectReplacementCharacter;
   }
+
+  @override
+  String toRawText() => value.toString();
 
   @override
   String toString() => '${super.toString()} ${value.type}';

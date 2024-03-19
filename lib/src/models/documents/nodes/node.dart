@@ -129,6 +129,8 @@ abstract base class Node extends LinkedListEntry<Node> {
     EmbedBuilder? unknownEmbedBuilder,
   ]);
 
+  String toRawText();
+
   Delta toDelta();
 
   void insert(int index, Object data, Style? style);

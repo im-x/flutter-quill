@@ -81,6 +81,7 @@ class QuillRawEditorConfigurations extends Equatable {
     this.enableScribble = false,
     this.onScribbleActivated,
     this.scribbleAreaInsets,
+    this.onSubmitted,
   });
 
   /// Controls the document being edited.
@@ -287,6 +288,8 @@ class QuillRawEditorConfigurations extends Equatable {
   ///
   /// See [https://api.flutter.dev/flutter/widgets/EditableText/contentInsertionConfiguration.html]
   final ContentInsertionConfiguration? contentInsertionConfiguration;
+
+  final ValueChanged<String>? onSubmitted;
 
   /// Whether the [onTapOutside] should be triggered or not
   /// Defaults to `true`

@@ -1,8 +1,7 @@
 import 'dart:async' show StreamController;
 
-import 'package:meta/meta.dart';
-
 import '../../../quill_delta.dart';
+import '../../converters/delta_html_codec.dart';
 import '../../widgets/quill/embeds.dart';
 import '../rules/rule.dart';
 import '../structs/doc_change.dart';
@@ -10,7 +9,6 @@ import '../structs/history_changed.dart';
 import '../structs/offset_value.dart';
 import '../structs/segment_leaf_node.dart';
 import 'attribute.dart';
-import 'delta_x.dart';
 import 'history.dart';
 import 'nodes/block.dart';
 import 'nodes/container.dart';
@@ -35,6 +33,14 @@ class Document {
   /// Creates new document from provided `delta`.
   Document.fromDelta(Delta delta) : _delta = delta {
     _loadDocument(delta);
+  }
+
+  Document.fromHtml(String html) : _delta = _transform(htmlDecode(html)) {
+    _loadDocument(_delta);
+  }
+
+  String toHtml() {
+    return htmlEncode(_delta);
   }
 
   /// The root node of the document tree
@@ -420,6 +426,8 @@ class Document {
           .map((e) => e.toPlainText(embedBuilders, unknownEmbedBuilder))
           .join();
 
+  String toRawString() => _root.children.map((e) => e.toRawText()).join();
+
   void _loadDocument(Delta doc) {
     if (doc.isEmpty) {
       throw ArgumentError.value(
@@ -467,10 +475,10 @@ class Document {
   }
 
   /// Convert the HTML Raw string to [Document]
-  @experimental
-  static Document fromHtml(String html) {
-    return Document.fromDelta(DeltaX.fromHtml(html));
-  }
+  // @experimental
+  // static Document fromHtml(String html) {
+  //   return Document.fromDelta(DeltaX.fromHtml(html));
+  // }
 }
 
 /// Source of a [Change].

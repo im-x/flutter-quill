@@ -118,6 +118,9 @@ abstract base class QuillContainer<T extends Node?> extends Node {
           .map((e) => e.toPlainText(embedBuilders, unknownEmbedBuilder))
           .join();
 
+  @override
+  String toRawText() => children.map((child) => child.toRawText()).join();
+
   /// Content length of this node's children.
   ///
   /// To get number of children in this node use [childCount].

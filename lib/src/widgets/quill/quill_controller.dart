@@ -43,6 +43,27 @@ class QuillController extends ChangeNotifier {
 
   Document get document => _document;
 
+  void updateDocument(
+    Document d, {
+    TextSelection? selection,
+    bool notify = false,
+  }) {
+    _document = d;
+
+    if (selection == null) {
+      final delta = d.toDelta();
+      final index = delta.transformPosition(delta.length - 1);
+      _updateSelection(TextSelection(baseOffset: index, extentOffset: index),
+          ChangeSource.local);
+    } else {
+      _selection = selection;
+    }
+
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
   set document(Document doc) {
     _document = doc;
 
@@ -50,6 +71,12 @@ class QuillController extends ChangeNotifier {
     _selection = const TextSelection(baseOffset: 0, extentOffset: 0);
 
     notifyListeners();
+  }
+
+  void undoIgnoreFocus() {
+    ignoreFocusOnTextChange = true;
+    undo();
+    ignoreFocusOnTextChange = false;
   }
 
   @experimental
@@ -477,6 +504,22 @@ class QuillController extends ChangeNotifier {
 
     _isDisposed = true;
     super.dispose();
+  }
+
+  void cleanFormat({bool isNotify = true}) {
+    final attrs = <Attribute>{};
+    for (final style in getAllSelectionStyles()) {
+      for (final attr in style.attributes.values) {
+        attrs.add(attr);
+      }
+    }
+    for (final attr in attrs) {
+      if (attr.isInline) {
+        formatSelection(Attribute.clone(attr, null),
+            shouldNotifyListeners: false);
+      }
+    }
+    if (isNotify) notifyListeners();
   }
 
   void _updateSelection(TextSelection textSelection, ChangeSource source) {

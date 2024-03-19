@@ -1,5 +1,7 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
 
+import '../../../utils/quill_data.dart';
+
 /// An object which can be embedded into a Quill document.
 ///
 /// See also:
@@ -21,7 +23,11 @@ class Embeddable {
   static Embeddable fromJson(Map<String, dynamic> json) {
     final m = Map<String, dynamic>.from(json);
     assert(m.length == 1, 'Embeddable map must only have one key');
-
+    if (json['type'] == 'BlockEmbed') {
+      return BlockEmbed(json.keys.last, json.values.last);
+    } else if (json['type'] == 'InlineEmbed') {
+      return InlineEmbed(json.keys.last, json.values.last);
+    }
     return Embeddable(m.keys.first, m.values.first);
   }
 }
@@ -54,5 +60,51 @@ class CustomBlockEmbed extends BlockEmbed {
   static CustomBlockEmbed fromJsonString(String data) {
     final embeddable = Embeddable.fromJson(jsonDecode(data));
     return CustomBlockEmbed(embeddable.type, embeddable.data);
+  }
+}
+
+class InlineEmbed extends Embeddable {
+  InlineEmbed(super.type, Object super.data);
+
+  static const emojiName = 'emoji';
+  static InlineEmbed emoji(String name) => InlineEmbed(emojiName, name);
+
+  static const mentionName = 'mention';
+  static InlineEmbed mention(Map<int, String> info) =>
+      InlineEmbed(mentionName, info);
+
+  static const topicName = 'topic';
+  static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
+  static String getTopicHtml(String name) => '<p>[#$name#]</p>';
+
+  static const editName = 'edited';
+  static InlineEmbed edit(String name) => InlineEmbed(editName, name);
+  static String getEditHtml(String name) => '[%$name%]';
+
+  static const containerTextName = 'container_text';
+  static InlineEmbed containerText(String className, String text) =>
+      InlineEmbed(containerTextName, {'class': className, 'text': text});
+
+  @override
+  String toString() {
+    if (type == emojiName) {
+      return '[:${data.toString()}]';
+    } else if (type == mentionName) {
+      try {
+        final map = data as Map<int, String>;
+        final userID = map.keys.first;
+        final displayName = QuillData.getUserDisplayName?.call(userID);
+        var name = map.values.first;
+        if (displayName != null && displayName.isNotEmpty) {
+          name = displayName;
+        }
+        return '@$name';
+      } catch (e) {
+        return '@未知用户';
+      }
+    } else if (type == topicName) {
+      return '#${data.toString()}#';
+    }
+    return '';
   }
 }

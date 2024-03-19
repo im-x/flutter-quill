@@ -79,6 +79,7 @@ class QuillEditorConfigurations extends Equatable {
     this.enableScribble = false,
     this.onScribbleActivated,
     this.scribbleAreaInsets,
+    this.onSubmitted,
   });
 
   final QuillSharedConfigurations sharedConfigurations;
@@ -312,6 +313,8 @@ class QuillEditorConfigurations extends Equatable {
   /// See [https://api.flutter.dev/flutter/widgets/EditableText/contentInsertionConfiguration.html]
   final ContentInsertionConfiguration? contentInsertionConfiguration;
 
+  final ValueChanged<String>? onSubmitted;
+
   /// Using the editorKey for get getLocalRectForCaret
   /// editorKey.currentState?.renderEditor.getLocalRectForCaret
   final GlobalKey<EditorState>? editorKey;
@@ -398,6 +401,7 @@ class QuillEditorConfigurations extends Equatable {
     QuillDialogTheme? dialogTheme,
     QuillEditorContextMenuBuilder? contextMenuBuilder,
     ContentInsertionConfiguration? contentInsertionConfiguration,
+    ValueChanged<String>? onSubmitted,
     GlobalKey<EditorState>? editorKey,
     TextSelectionThemeData? textSelectionThemeData,
     bool? requestKeyboardFocusOnCheckListChanged,
@@ -457,6 +461,7 @@ class QuillEditorConfigurations extends Equatable {
       contextMenuBuilder: contextMenuBuilder ?? this.contextMenuBuilder,
       contentInsertionConfiguration:
           contentInsertionConfiguration ?? this.contentInsertionConfiguration,
+      onSubmitted: onSubmitted ?? this.onSubmitted,
       editorKey: editorKey ?? this.editorKey,
       textSelectionThemeData:
           textSelectionThemeData ?? this.textSelectionThemeData,
