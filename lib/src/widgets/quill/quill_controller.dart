@@ -553,8 +553,20 @@ class QuillController extends ChangeNotifier {
   }
 
   void undoIgnoreFocus() {
+    final cursorStart = selection.baseOffset;
+    final beforeCursor = cursorStart - 1;
+    if (beforeCursor < 0) {
+      return;
+    }
     ignoreFocusOnTextChange = true;
-    undo();
-    ignoreFocusOnTextChange = false;
+    replaceText(
+      beforeCursor,
+      1,
+      '',
+      TextSelection.collapsed(
+        offset: beforeCursor,
+      ),
+    );
+    ignoreFocusOnTextChange = true;
   }
 }
