@@ -629,6 +629,7 @@ class RenderEditor extends RenderEditableContainerBox
     EdgeInsets floatingCursorAddedMargin =
         const EdgeInsets.fromLTRB(4, 4, 4, 5),
     double? maxContentWidth,
+    this.readOnly = false,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
         _startHandleLayerLink = startHandleLayerLink,
@@ -642,6 +643,7 @@ class RenderEditor extends RenderEditableContainerBox
   final CursorCont _cursorController;
   final bool floatingCursorDisabled;
   final bool scrollable;
+  bool readOnly;
 
   Document document;
   TextSelection selection;
@@ -1074,6 +1076,17 @@ class RenderEditor extends RenderEditableContainerBox
     }
     mainAxisExtent += resolvedPadding!.bottom;
     size = constraints.constrain(Size(constraints.maxWidth, mainAxisExtent));
+
+    if (readOnly) {
+      final width = _getIntrinsicCrossAxis((child) {
+        final childHeight = math.max<double>(
+            0, size.height - _resolvedPadding!.top + _resolvedPadding!.bottom);
+        return child.getMaxIntrinsicWidth(childHeight) +
+            _resolvedPadding!.left +
+            _resolvedPadding!.right;
+      });
+      size = constraints.constrain(Size(width, mainAxisExtent));
+    }
 
     assert(size.isFinite);
   }

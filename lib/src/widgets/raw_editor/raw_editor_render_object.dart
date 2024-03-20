@@ -24,6 +24,7 @@ class QuilRawEditorMultiChildRenderObject extends MultiChildRenderObjectWidget {
     this.padding = EdgeInsets.zero,
     this.maxContentWidth,
     this.offset,
+    this.readOnly = false,
   });
 
   final ViewportOffset? offset;
@@ -41,6 +42,7 @@ class QuilRawEditorMultiChildRenderObject extends MultiChildRenderObjectWidget {
   final double? maxContentWidth;
   final CursorCont cursorController;
   final bool floatingCursorDisabled;
+  final bool readOnly;
 
   @override
   RenderEditor createRenderObject(BuildContext context) {
@@ -60,6 +62,7 @@ class QuilRawEditorMultiChildRenderObject extends MultiChildRenderObjectWidget {
       maxContentWidth: maxContentWidth,
       scrollBottomInset: scrollBottomInset,
       floatingCursorDisabled: floatingCursorDisabled,
+      readOnly: readOnly,
     );
   }
 
@@ -80,6 +83,7 @@ class QuilRawEditorMultiChildRenderObject extends MultiChildRenderObjectWidget {
       ..onSelectionChanged = onSelectionChanged
       ..setScrollBottomInset(scrollBottomInset)
       ..setPadding(padding)
+      ..readOnly = readOnly
       ..maxContentWidth = maxContentWidth;
   }
 }
