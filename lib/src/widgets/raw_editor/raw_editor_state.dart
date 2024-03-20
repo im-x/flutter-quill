@@ -314,6 +314,7 @@ class QuillRawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
+      _selectionOverlay?.showToolbarIfNeed();
     }
   }
 
@@ -968,6 +969,7 @@ class QuillRawEditorState extends EditorState
   }
 
   void _handleSelectionCompleted() {
+    _selectionOverlay?.hideMagnifier();
     controller.onSelectionCompleted?.call();
   }
 
@@ -1368,9 +1370,7 @@ class QuillRawEditorState extends EditorState
 
   void _onChangeTextEditingValue([bool ignoreCaret = false]) {
     updateRemoteValueIfNeeded();
-    if (ignoreCaret) {
-      return;
-    }
+
     _showCaretOnScreen();
     _cursorCont.startOrStopCursorTimerIfNeeded(_hasFocus, controller.selection);
     if (hasConnection) {
@@ -1379,6 +1379,16 @@ class QuillRawEditorState extends EditorState
       _cursorCont
         ..stopCursorTimer(resetCharTicks: false)
         ..startCursorTimer();
+    }
+
+    if (ignoreCaret) {
+      if (mounted) {
+        setState(() {
+          // Use widget.controller.value in build()
+          // Trigger build and updateChildren
+        });
+      }
+      return;
     }
 
     // Refresh selection overlay after the build step had a chance to
@@ -1402,11 +1412,16 @@ class QuillRawEditorState extends EditorState
 
   void _updateOrDisposeSelectionOverlayIfNeeded() {
     if (_selectionOverlay != null) {
-      if (!_hasFocus || textEditingValue.selection.isCollapsed) {
+      if (!_hasFocus) {
         _selectionOverlay!.dispose();
         _selectionOverlay = null;
       } else {
+        _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
         _selectionOverlay!.update(textEditingValue);
+        if (_selectionOverlay!.handlesVisible &&
+            !_selectionOverlay!.hasHandles) {
+          _selectionOverlay!.showHandles();
+        }
       }
     } else if (_hasFocus) {
       _selectionOverlay = EditorTextSelectionOverlay(
@@ -1426,15 +1441,17 @@ class QuillRawEditorState extends EditorState
       );
       _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
       _selectionOverlay!.showHandles();
+    } else {
+      _selectionOverlay?.update(textEditingValue);
     }
   }
 
   void _handleFocusChanged() {
-    if (dirty) {
-      SchedulerBinding.instance
-          .addPostFrameCallback((_) => _handleFocusChanged());
-      return;
-    }
+    // if (dirty) {
+    //   SchedulerBinding.instance
+    //       .addPostFrameCallback((_) => _handleFocusChanged());
+    //   return;
+    // }
     openOrCloseConnection();
     _cursorCont.startOrStopCursorTimerIfNeeded(_hasFocus, controller.selection);
     _updateOrDisposeSelectionOverlayIfNeeded();

@@ -98,6 +98,9 @@ class EditorTextSelectionGestureDetectorBuilder {
   @protected
   RenderEditor? get renderEditor => editor?.renderEditor;
 
+  EditorTextSelectionOverlay? get textSelectionOverlay =>
+      editor?.selectionOverlay;
+
   /// Handler for [EditorTextSelectionGestureDetector.onTapDown].
   ///
   /// By default, it forwards the tap to [RenderEditable.handleTapDown] and sets
@@ -167,6 +170,7 @@ class EditorTextSelectionGestureDetectorBuilder {
       null,
       SelectionChangedCause.forcePress,
     );
+    textSelectionOverlay?.hideMagnifier();
     if (shouldShowSelectionToolbar) {
       editor!.showToolbar();
     }
@@ -260,6 +264,7 @@ class EditorTextSelectionGestureDetectorBuilder {
     if (shouldShowSelectionToolbar) {
       editor!.showToolbar();
     }
+    editor?.selectionOverlay?.hideMagnifier();
   }
 
   /// Handler for [EditorTextSelectionGestureDetector.onDoubleTapDown].
@@ -331,6 +336,7 @@ class EditorTextSelectionGestureDetectorBuilder {
   ///  which triggers this callback.
   @protected
   void onDragSelectionEnd(DragEndDetails details) {
+    textSelectionOverlay?.hideMagnifier();
     renderEditor!.handleDragEnd(details);
     if (isDesktop(supportWeb: true) &&
         delegate.selectionEnabled &&

@@ -382,7 +382,19 @@ class _QuillEditorSelectionGestureDetectorBuilder
   }
 
   @override
-  void onForcePressEnd(ForcePressDetails details) {}
+  void onForcePressEnd(ForcePressDetails details) {
+    textSelectionOverlay?.hideMagnifier();
+  }
+
+  double _getHandleDy(double dragDy, double handleDy) {
+    final lineHeight =
+        renderEditor!.preferredLineHeight(renderEditor!.selection.base);
+
+    final distanceDragged = dragDy - handleDy;
+    final dragDirection = distanceDragged < 0.0 ? -1 : 1;
+    final linesDragged = dragDirection * (distanceDragged.abs() / lineHeight);
+    return handleDy + linesDragged * lineHeight;
+  }
 
   @override
   void onSingleLongTapMoveUpdate(LongPressMoveUpdateDetails details) {
@@ -408,6 +420,22 @@ class _QuillEditorSelectionGestureDetectorBuilder
         from: details.globalPosition,
         cause: SelectionChangedCause.longPress,
       );
+      if (textSelectionOverlay != null && renderEditor!.selection.isCollapsed) {
+        _endHandleDragPosition =
+            _getHandleDy(details.globalPosition.dy, _endHandleDragPosition);
+        final adjustedOffset = Offset(
+          details.globalPosition.dx,
+          (_endHandleDragPosition + _endHandleDragPositionToCenterOfLine).abs(),
+        );
+        final position = renderEditor!.getPositionForOffset(adjustedOffset);
+
+        textSelectionOverlay!
+            .updateMagnifierInfo(textSelectionOverlay!.buildMagnifier(
+          currentTextPosition: position,
+          globalGesturePosition: details.globalPosition,
+          renderEditable: renderEditor!,
+        ));
+      }
     } else {
       renderEditor!.selectWordsInRange(
         details.globalPosition - details.offsetFromOrigin,
@@ -527,6 +555,9 @@ class _QuillEditorSelectionGestureDetectorBuilder
     }
   }
 
+  late double _endHandleDragPosition;
+  late double _endHandleDragPositionToCenterOfLine;
+
   @override
   void onSingleLongTapStart(LongPressStartDetails details) {
     if (_state.configurations.onSingleLongTapStart != null) {
@@ -549,6 +580,31 @@ class _QuillEditorSelectionGestureDetectorBuilder
           from: details.globalPosition,
           cause: SelectionChangedCause.longPress,
         );
+
+        if (textSelectionOverlay != null &&
+            renderEditor!.selection.isCollapsed) {
+          final lineHeight =
+              renderEditor!.preferredLineHeight(renderEditor!.selection.base);
+          _endHandleDragPosition = details.globalPosition.dy;
+          final endpoints =
+              renderEditor!.getEndpointsForSelection(renderEditor!.selection);
+          final endPoint = renderEditor!.localToGlobal(endpoints.last.point);
+          final centerOfLine = endPoint.dy - lineHeight / 2;
+          _endHandleDragPositionToCenterOfLine =
+              centerOfLine - _endHandleDragPosition;
+
+          final position =
+              renderEditor!.getPositionForOffset(details.globalPosition);
+
+          textSelectionOverlay?.showMagnifierInfo(
+            textSelectionOverlay!.buildMagnifier(
+              renderEditable: renderEditor!,
+              globalGesturePosition: details.globalPosition,
+              currentTextPosition: position,
+            ),
+          );
+        }
+        textSelectionOverlay?.hideToolbarIfNeed();
       } else {
         renderEditor!.selectWord(SelectionChangedCause.longPress);
         Feedback.forLongPress(_state.context);
@@ -1145,6 +1201,11 @@ class RenderEditor extends RenderEditableContainerBox
     final child = childAtPosition(position);
     return child.preferredLineHeight(
         TextPosition(offset: position.offset - child.container.offset));
+  }
+
+  TextPosition getPositionForPoint(Offset globalPosition) {
+    globalPosition += -_paintOffset;
+    return getPositionForOffset(globalToLocal(globalPosition));
   }
 
   @override

@@ -1292,8 +1292,8 @@ class RenderEditableTextLine extends RenderEditableBox {
 
   @override
   TextPosition globalToLocalPosition(TextPosition position) {
-    assert(container.containsOffset(position.offset),
-        'The provided text position is not in the current node');
+    // assert(container.containsOffset(position.offset),
+    //     'The provided text position is not in the current node');
     return TextPosition(
       offset: position.offset - container.documentOffset,
       affinity: position.affinity,

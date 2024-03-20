@@ -73,12 +73,6 @@ class QuillController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void undoIgnoreFocus() {
-    ignoreFocusOnTextChange = true;
-    undo();
-    ignoreFocusOnTextChange = false;
-  }
-
   @experimental
   void setContents(
     Delta delta, {
@@ -506,22 +500,6 @@ class QuillController extends ChangeNotifier {
     super.dispose();
   }
 
-  void cleanFormat({bool isNotify = true}) {
-    final attrs = <Attribute>{};
-    for (final style in getAllSelectionStyles()) {
-      for (final attr in style.attributes.values) {
-        attrs.add(attr);
-      }
-    }
-    for (final attr in attrs) {
-      if (attr.isInline) {
-        formatSelection(Attribute.clone(attr, null),
-            shouldNotifyListeners: false);
-      }
-    }
-    if (isNotify) notifyListeners();
-  }
-
   void _updateSelection(TextSelection textSelection, ChangeSource source) {
     _selection = textSelection;
     final end = document.length - 1;
@@ -557,4 +535,26 @@ class QuillController extends ChangeNotifier {
 
   // Notify toolbar buttons directly with attributes
   Map<String, Attribute> toolbarButtonToggler = const {};
+
+  void cleanFormat({bool isNotify = true}) {
+    final attrs = <Attribute>{};
+    for (final style in getAllSelectionStyles()) {
+      for (final attr in style.attributes.values) {
+        attrs.add(attr);
+      }
+    }
+    for (final attr in attrs) {
+      if (attr.isInline) {
+        formatSelection(Attribute.clone(attr, null),
+            shouldNotifyListeners: false);
+      }
+    }
+    if (isNotify) notifyListeners();
+  }
+
+  void undoIgnoreFocus() {
+    ignoreFocusOnTextChange = true;
+    undo();
+    ignoreFocusOnTextChange = false;
+  }
 }

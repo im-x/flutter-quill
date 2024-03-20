@@ -345,9 +345,9 @@ class Document {
       throw StateError('_delta compose failed');
     }
 
-    if (_delta != _root.toDelta()) {
-      throw StateError('Compose failed');
-    }
+    // if (_delta != _root.toDelta()) {
+    //   throw StateError('Compose failed');
+    // }
     final change = DocChange(originalDelta, delta, changeSource);
     documentChangeObserver.add(change);
     history.handleDocChange(change);

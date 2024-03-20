@@ -23,12 +23,13 @@ class Embeddable {
   static Embeddable fromJson(Map<String, dynamic> json) {
     final m = Map<String, dynamic>.from(json);
     assert(m.length == 1, 'Embeddable map must only have one key');
-    if (json['type'] == 'BlockEmbed') {
-      return BlockEmbed(json.keys.last, json.values.last);
-    } else if (json['type'] == 'InlineEmbed') {
-      return InlineEmbed(json.keys.last, json.values.last);
+    final key = m.keys.first;
+    final value = m.values.first;
+
+    if (InlineEmbed.isInlineEmbed(key)) {
+      return InlineEmbed(key, value);
     }
-    return Embeddable(m.keys.first, m.values.first);
+    return Embeddable(key, value);
   }
 }
 
@@ -65,6 +66,17 @@ class CustomBlockEmbed extends BlockEmbed {
 
 class InlineEmbed extends Embeddable {
   InlineEmbed(super.type, Object super.data);
+
+  static bool isInlineEmbed(String key) {
+    if (key == emojiName ||
+        key == mentionName ||
+        key == topicName ||
+        key == editName ||
+        key == containerTextName) {
+      return true;
+    }
+    return false;
+  }
 
   static const emojiName = 'emoji';
   static InlineEmbed emoji(String name) => InlineEmbed(emojiName, name);
