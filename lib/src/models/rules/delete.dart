@@ -174,8 +174,9 @@ class EnsureEmbedLineRule extends DeleteRule {
   }
 
   bool _isVideo(op) {
-    return op != null &&
-        op.data is! String &&
-        !(op.data as Map).containsKey(BlockEmbed.videoType);
+    return false;
+    // return op != null &&
+    //     op.data is! String &&
+    //     !(op.data as Map).containsKey(BlockEmbed.videoType);
   }
 }
