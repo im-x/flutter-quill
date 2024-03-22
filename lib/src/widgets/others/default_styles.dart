@@ -4,6 +4,7 @@ import '../../models/documents/attribute.dart';
 import '../../models/documents/style.dart';
 import '../../models/structs/vertical_spacing.dart';
 import '../../utils/platform.dart';
+import '../../utils/quill_data.dart';
 import '../style_widgets/checkbox_point.dart';
 
 class QuillStyles extends InheritedWidget {
@@ -225,11 +226,12 @@ class DefaultStyles {
   static DefaultStyles getInstance(BuildContext context) {
     final themeData = Theme.of(context);
     final defaultTextStyle = DefaultTextStyle.of(context);
-    final baseStyle = defaultTextStyle.style.copyWith(
-      fontSize: 16,
-      height: 1.3,
-      decoration: TextDecoration.none,
-    );
+    // final baseStyle = defaultTextStyle.style.copyWith(
+    //   fontSize: 16,
+    //   height: 1.3,
+    //   decoration: TextDecoration.none,
+    // );
+    final baseStyle = QuillData.chatFontStyle;
     const baseSpacing = VerticalSpacing(6, 0);
     String fontFamily;
     if (isAppleOS(platform: themeData.platform, supportWeb: true)) {
