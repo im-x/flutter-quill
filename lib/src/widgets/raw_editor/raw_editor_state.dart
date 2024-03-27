@@ -20,7 +20,7 @@ import 'package:flutter/services.dart'
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart'
     show KeyboardVisibilityController;
 import 'package:html/parser.dart' as html_parser;
-import 'package:super_clipboard/super_clipboard.dart';
+// import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../models/documents/attribute.dart';
 import '../../models/documents/delta_x.dart';
@@ -210,45 +210,45 @@ class QuillRawEditorState extends EditorState
       return;
     }
 
-    final clipboard = SystemClipboard.instance;
+    // final clipboard = SystemClipboard.instance;
 
-    if (clipboard != null) {
-      final reader = await clipboard.read();
-      if (reader.canProvide(Formats.htmlText)) {
-        final html = await reader.readValue(Formats.htmlText);
-        if (html == null) {
-          return;
-        }
-        final htmlBody = html_parser.parse(html).body?.outerHtml;
-        final deltaFromClipboard = DeltaX.fromHtml(htmlBody ?? html);
+    // if (clipboard != null) {
+    //   final reader = await clipboard.read();
+    //   if (reader.canProvide(Formats.htmlText)) {
+    //     final html = await reader.readValue(Formats.htmlText);
+    //     if (html == null) {
+    //       return;
+    //     }
+    //     final htmlBody = html_parser.parse(html).body?.outerHtml;
+    //     final deltaFromClipboard = DeltaX.fromHtml(htmlBody ?? html);
 
-        controller.replaceText(
-          textEditingValue.selection.start,
-          textEditingValue.selection.end - textEditingValue.selection.start,
-          deltaFromClipboard,
-          TextSelection.collapsed(offset: textEditingValue.selection.end),
-        );
+    //     controller.replaceText(
+    //       textEditingValue.selection.start,
+    //       textEditingValue.selection.end - textEditingValue.selection.start,
+    //       deltaFromClipboard,
+    //       TextSelection.collapsed(offset: textEditingValue.selection.end),
+    //     );
 
-        bringIntoView(textEditingValue.selection.extent);
+    //     bringIntoView(textEditingValue.selection.extent);
 
-        if (cause == SelectionChangedCause.toolbar) {
-          hideToolbar();
-        }
+    //     if (cause == SelectionChangedCause.toolbar) {
+    //       hideToolbar();
+    //     }
 
-        // Collapse the selection and hide the toolbar and handles.
-        userUpdateTextEditingValue(
-          TextEditingValue(
-            text: textEditingValue.text,
-            selection: TextSelection.collapsed(
-              offset: textEditingValue.selection.end,
-            ),
-          ),
-          cause,
-        );
+    //     // Collapse the selection and hide the toolbar and handles.
+    //     userUpdateTextEditingValue(
+    //       TextEditingValue(
+    //         text: textEditingValue.text,
+    //         selection: TextSelection.collapsed(
+    //           offset: textEditingValue.selection.end,
+    //         ),
+    //       ),
+    //       cause,
+    //     );
 
-        return;
-      }
-    }
+    //     return;
+    //   }
+    // }
 
     // Snapshot the input before using `await`.
     // See https://github.com/flutter/flutter/issues/11427
@@ -281,30 +281,30 @@ class QuillRawEditorState extends EditorState
       return;
     }
 
-    final onImagePaste = widget.configurations.onImagePaste;
-    if (onImagePaste != null) {
-      if (clipboard != null) {
-        final reader = await clipboard.read();
-        if (!reader.canProvide(Formats.png)) {
-          return;
-        }
-        reader.getFile(Formats.png, (value) async {
-          final image = value;
+    // final onImagePaste = widget.configurations.onImagePaste;
+    // if (onImagePaste != null) {
+    //   if (clipboard != null) {
+    //     final reader = await clipboard.read();
+    //     if (!reader.canProvide(Formats.png)) {
+    //       return;
+    //     }
+    //     reader.getFile(Formats.png, (value) async {
+    //       final image = value;
 
-          final imageUrl = await onImagePaste(await image.readAll());
-          if (imageUrl == null) {
-            return;
-          }
+    //       final imageUrl = await onImagePaste(await image.readAll());
+    //       if (imageUrl == null) {
+    //         return;
+    //       }
 
-          controller.replaceText(
-            textEditingValue.selection.end,
-            0,
-            BlockEmbed.image(imageUrl),
-            null,
-          );
-        });
-      }
-    }
+    //       controller.replaceText(
+    //         textEditingValue.selection.end,
+    //         0,
+    //         BlockEmbed.image(imageUrl),
+    //         null,
+    //       );
+    //     });
+    //   }
+    // }
   }
 
   /// Select the entire text value.
