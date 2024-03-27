@@ -264,7 +264,9 @@ class QuillRawEditorState extends EditorState
       );
 
       bringIntoView(textEditingValue.selection.extent);
-
+      if (cause == SelectionChangedCause.toolbar) {
+        hideToolbar();
+      }
       // Collapse the selection and hide the toolbar and handles.
       userUpdateTextEditingValue(
         TextEditingValue(
