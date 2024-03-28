@@ -93,11 +93,11 @@ class QuillRawEditorState extends EditorState
   // for pasting style
   @override
   List<OffsetValue> get pasteStyleAndEmbed => _pasteStyleAndEmbed;
-  List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
+  static List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
 
   @override
   String get pastePlainText => _pastePlainText;
-  String _pastePlainText = '';
+  static String _pastePlainText = '';
 
   ClipboardStatusNotifier? _clipboardStatus;
   final LayerLink _toolbarLayerLink = LayerLink();
@@ -117,6 +117,18 @@ class QuillRawEditorState extends EditorState
         false);
     widget.configurations.contentInsertionConfiguration?.onContentInserted
         .call(content);
+  }
+
+  static void copyAllOnClipBoard(Document doc) {
+    const start = 0;
+    final end = doc.length;
+    try {
+      final plainText = doc.getPlainText(0, end);
+      final styleAndEmbed = doc.collectAllIndividualStyleAndEmbed(start, end);
+      _pastePlainText = plainText;
+      _pasteStyleAndEmbed = styleAndEmbed;
+      Clipboard.setData(ClipboardData(text: _pastePlainText));
+    } catch (e) {}
   }
 
   /// Copy current selection to [Clipboard].
