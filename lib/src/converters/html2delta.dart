@@ -34,6 +34,7 @@ final Map<String, _HtmlType> _kSupportedHTMLElements = {
   'p': _HtmlType.INLINE,
   'span': _HtmlType.INLINE,
   's': _HtmlType.INLINE,
+  'u': _HtmlType.INLINE,
 };
 
 /// HTML -> Delta
@@ -352,6 +353,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       // return document.toDelta();
       if (element.localName == 'hr') {
         delta.insert(InlineEmbed.hrLine(''));
+        delta.insert('\n');
       }
       return delta;
     } else {
@@ -366,6 +368,9 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       }
       if (element.localName == 's') {
         attributes[Attribute.strikeThrough.key] = Attribute.strikeThrough.value;
+      }
+      if (element.localName == 'u') {
+        attributes[Attribute.underline.key] = Attribute.underline.value;
       }
       if (element.localName == 'span') {
         final style = element.attributes['style'];
@@ -417,7 +422,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       return null;
     }
     if (QuillData.kHexBackgroundColorRegex.hasMatch(style)) {
-      final matches = QuillData.kHexColorRegex.allMatches(style);
+      final matches = QuillData.kHexBackgroundColorRegex.allMatches(style);
       if (matches.isEmpty) return null;
 
       final firstMatch = matches.first;
@@ -427,7 +432,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
     }
 
     if (QuillData.kRgbBackgroundColorRegex.hasMatch(style)) {
-      final matches = QuillData.kRgbColorRegex.allMatches(style);
+      final matches = QuillData.kBackgroundRgbColorRegex.allMatches(style);
       if (matches.isEmpty) return null;
 
       final match = matches.first;
