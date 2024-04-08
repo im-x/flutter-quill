@@ -19,7 +19,7 @@ class QuillData {
   );
 
   static RegExp kRgbColorRegex = RegExp(
-    r'color:\s?rgb\((\d+), (\d+), (\d+)\)',
+    r'(?<!-)color:\s?rgb\((\d+), (\d+), (\d+)\)',
   );
 
   static RegExp kBackgroundRgbColorRegex = RegExp(
