@@ -350,7 +350,10 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       //   document.format(index - 1, 0, Attribute.embed.horizontalRule); */
       // }
       // return document.toDelta();
-      return Document().toDelta();
+      if (element.localName == 'hr') {
+        delta.insert(InlineEmbed.hrLine(''));
+      }
+      return delta;
     } else {
       if (element.localName == 'em' || element.localName == 'i') {
         attributes[Attribute.italic.key] = Attribute.italic.value;

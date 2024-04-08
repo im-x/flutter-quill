@@ -95,7 +95,13 @@ class InlineEmbed extends Embeddable {
 
   static const containerTextName = 'container_text';
   static InlineEmbed containerText(String className, String text) =>
-      InlineEmbed(containerTextName, {'class': className, 'text': text});
+      InlineEmbed(containerTextName, {
+        'class': className,
+        'text': text,
+      });
+
+  static const hrLineName = 'hr_line';
+  static InlineEmbed hrLine(name) => InlineEmbed(hrLineName, name);
 
   @override
   String toString() {
