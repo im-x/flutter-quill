@@ -142,8 +142,7 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
           final m = matches.first;
           if (m.start == 0 && m.end == text.length) {
             if (!node.style.attributes.containsKey(Attribute.link.key)) {
-              node.style.attributes[Attribute.link.key] =
-                  LinkAttribute(node.value);
+              node.applyAttribute(LinkAttribute(node.value));
             }
             nodes.add(node);
           }
@@ -170,8 +169,7 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
 
               final leaf = QuillText(childText)..applyStyle(node.style);
               if (matchStarts.contains(startIndex)) {
-                leaf.style.attributes[Attribute.link.key] =
-                    LinkAttribute(childText);
+                leaf.applyAttribute(LinkAttribute(childText));
               }
               nodes.add(leaf);
             }
