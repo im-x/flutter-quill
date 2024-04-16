@@ -142,7 +142,11 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
           final m = matches.first;
           if (m.start == 0 && m.end == text.length) {
             if (!node.style.attributes.containsKey(Attribute.link.key)) {
-              node.applyAttribute(LinkAttribute(node.value));
+              var href = node.value;
+              if (!href.startsWith('http') && !href.startsWith('https')) {
+                href = 'http://$href';
+              }
+              node.applyAttribute(LinkAttribute(href));
             }
             nodes.add(node);
           }
@@ -169,7 +173,11 @@ class Delta2HtmlEncoder extends Converter<Delta, String> {
 
               final leaf = QuillText(childText)..applyStyle(node.style);
               if (matchStarts.contains(startIndex)) {
-                leaf.applyAttribute(LinkAttribute(childText));
+                var href = childText;
+                if (!href.startsWith('http') && !href.startsWith('https')) {
+                  href = 'http://$href';
+                }
+                leaf.applyAttribute(LinkAttribute(href));
               }
               nodes.add(leaf);
             }
