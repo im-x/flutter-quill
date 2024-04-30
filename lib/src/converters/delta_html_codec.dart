@@ -16,6 +16,9 @@ Delta htmlDecode(String source) {
   if (Platform.isIOS && specialCodeReg.hasMatch(source)) {
     source = source.replaceAll(specialCodeReg, '□');
   }
+  if (source.indexOf('\n') != -1) {
+    source = source.replaceAll('\n', '<br>');
+  }
   return html.decode(source);
 }
 
