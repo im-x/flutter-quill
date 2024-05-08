@@ -50,6 +50,7 @@ class QuillRawEditorConfigurations extends Equatable {
     this.scrollable = true,
     this.padding = EdgeInsets.zero,
     this.readOnly = false,
+    this.checkBoxReadOnly,
     this.disableClipboard = false,
     this.placeholder,
     this.onLaunchUrl,
@@ -73,6 +74,7 @@ class QuillRawEditorConfigurations extends Equatable {
     this.customRecognizerBuilder,
     this.floatingCursorDisabled = false,
     this.onImagePaste,
+    this.onGifPaste,
     this.customLinkPrefixes = const <String>[],
     this.dialogTheme,
     this.contentInsertionConfiguration,
@@ -103,6 +105,15 @@ class QuillRawEditorConfigurations extends Equatable {
   ///
   /// Defaults to false. Must not be null.
   final bool readOnly;
+
+  /// Override readOnly for checkbox.
+  ///
+  /// When this is set to false, the checkbox can be checked
+  /// or unchecked while readOnly is set to true.
+  /// When this is set to null, the readOnly value is used.
+  ///
+  /// Defaults to null.
+  final bool? checkBoxReadOnly;
 
   /// Disable Clipboard features
   ///
@@ -261,6 +272,8 @@ class QuillRawEditorConfigurations extends Equatable {
   final ScrollPhysics? scrollPhysics;
 
   final Future<String?> Function(Uint8List imageBytes)? onImagePaste;
+
+  final Future<String?> Function(Uint8List imageBytes)? onGifPaste;
 
   /// Contains user-defined shortcuts map.
   ///
