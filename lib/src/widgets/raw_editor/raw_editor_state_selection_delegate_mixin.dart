@@ -174,7 +174,9 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
       !widget.configurations.readOnly;
 
   @override
-  bool get copyEnabled => widget.configurations.contextMenuBuilder != null;
+  bool get copyEnabled =>
+      widget.configurations.contextMenuBuilder != null &&
+      widget.configurations.controller.showContextMenu;
 
   @override
   bool get pasteEnabled =>
@@ -182,5 +184,7 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
       !widget.configurations.readOnly;
 
   @override
-  bool get selectAllEnabled => widget.configurations.contextMenuBuilder != null;
+  bool get selectAllEnabled =>
+      widget.configurations.contextMenuBuilder != null &&
+      widget.configurations.controller.showContextMenu;
 }

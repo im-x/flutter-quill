@@ -161,6 +161,23 @@ class QuillRawEditorState extends EditorState
     }
   }
 
+  @override
+  bool closeToolbar() {
+    bringIntoView(textEditingValue.selection.extent);
+    hideToolbar();
+
+    // Collapse the selection and hide the toolbar and handles.
+    userUpdateTextEditingValue(
+      TextEditingValue(
+        text: textEditingValue.text,
+        selection:
+            TextSelection.collapsed(offset: textEditingValue.selection.end),
+      ),
+      SelectionChangedCause.toolbar,
+    );
+    return true;
+  }
+
   /// Cut current selection to [Clipboard].
   @override
   void cutSelection(SelectionChangedCause cause) {
@@ -988,6 +1005,7 @@ class QuillRawEditorState extends EditorState
 
   void _handleSelectionCompleted() {
     _selectionOverlay?.hideMagnifier();
+    closeToolbar();
     controller.onSelectionCompleted?.call();
   }
 
@@ -1452,6 +1470,7 @@ class QuillRawEditorState extends EditorState
         selectionCtrls: widget.configurations.selectionCtrls,
         selectionDelegate: this,
         clipboardStatus: _clipboardStatus,
+        onSelectionHandleMoved: widget.configurations.onSelectionHandleMoved,
         contextMenuBuilder: widget.configurations.contextMenuBuilder == null
             ? null
             : (context) =>
@@ -1608,6 +1627,7 @@ class QuillRawEditorState extends EditorState
     }
 
     _selectionOverlay!.update(textEditingValue);
+    _selectionOverlay!.setHandlesVisible(true);
     _selectionOverlay!.showToolbar();
     return true;
   }

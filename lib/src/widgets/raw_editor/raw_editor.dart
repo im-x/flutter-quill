@@ -83,5 +83,7 @@ abstract class EditorState extends State<QuillRawEditor>
 
   bool showToolbar();
 
+  bool closeToolbar();
+
   void requestKeyboard();
 }

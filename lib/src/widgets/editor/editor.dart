@@ -178,6 +178,7 @@ class QuillEditorState extends State<QuillEditor>
       this,
       configurations.detectWordBoundary,
     );
+    configurations.controller.editorKey = _editorKey;
   }
 
   @override
@@ -290,6 +291,7 @@ class QuillEditorState extends State<QuillEditor>
               onScribbleActivated: configurations.onScribbleActivated,
               scribbleAreaInsets: configurations.scribbleAreaInsets,
               onSubmitted: configurations.onSubmitted,
+              onSelectionHandleMoved: configurations.onSelectionHandleMoved,
             ),
           ),
         ),
@@ -997,6 +999,11 @@ class RenderEditor extends RenderEditableContainerBox
 
   @override
   void selectWordEdge(SelectionChangedCause cause) {
+    if (_lastTapDownPosition == null) {
+      _handleSelectionChange(TextSelection.collapsed(offset: 0), cause);
+      return;
+    }
+
     assert(_lastTapDownPosition != null);
     final position = getPositionForOffset(_lastTapDownPosition!);
     final child = childAtPosition(position);
@@ -1053,11 +1060,14 @@ class RenderEditor extends RenderEditableContainerBox
 
   @override
   void selectWord(SelectionChangedCause cause) {
+    if (_lastTapDownPosition == null) return;
+
     selectWordsInRange(_lastTapDownPosition!, null, cause);
   }
 
   @override
   void selectPosition({required SelectionChangedCause cause}) {
+    if (_lastTapDownPosition == null) return;
     selectPositionAt(from: _lastTapDownPosition!, cause: cause);
   }
 

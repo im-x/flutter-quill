@@ -14,6 +14,7 @@ import '../../models/structs/doc_change.dart';
 import '../../models/structs/image_url.dart';
 import '../../models/structs/offset_value.dart';
 import '../../utils/delta.dart';
+import '../raw_editor/raw_editor.dart';
 import '../toolbar/buttons/toggle_style_button.dart';
 
 typedef ReplaceTextCallback = bool Function(int index, int len, Object? data);
@@ -42,6 +43,20 @@ class QuillController extends ChangeNotifier {
   Document _document;
 
   Document get document => _document;
+
+  bool _showContextMenu = true;
+  bool get showContextMenu => _showContextMenu;
+  set showContextMenu(bool v) {
+    if (v == _showContextMenu) return;
+    _showContextMenu = v;
+  }
+
+  GlobalKey<EditorState>? _editorKey;
+  GlobalKey<EditorState>? get editorKey => _editorKey;
+  set editorKey(GlobalKey<EditorState>? v) {
+    if (v == _editorKey) return;
+    _editorKey = v;
+  }
 
   void updateDocument(
     Document d, {

@@ -80,11 +80,13 @@ class QuillEditorConfigurations extends Equatable {
     this.onScribbleActivated,
     this.scribbleAreaInsets,
     this.onSubmitted,
+    this.onSelectionHandleMoved,
   });
 
   final QuillSharedConfigurations sharedConfigurations;
 
   final QuillController controller;
+  final VoidCallback? onSelectionHandleMoved;
 
   /// The text placeholder in the quill editor
   final String? placeholder;

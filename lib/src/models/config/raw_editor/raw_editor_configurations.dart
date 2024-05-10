@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart' show Brightness, Uint8List;
+import 'package:flutter/foundation.dart'
+    show Brightness, Uint8List, VoidCallback;
 import 'package:flutter/material.dart'
     show
         AdaptiveTextSelectionToolbar,
@@ -82,10 +83,12 @@ class QuillRawEditorConfigurations extends Equatable {
     this.onScribbleActivated,
     this.scribbleAreaInsets,
     this.onSubmitted,
+    this.onSelectionHandleMoved,
   });
 
   /// Controls the document being edited.
   final QuillController controller;
+  final VoidCallback? onSelectionHandleMoved;
 
   /// Controls whether this editor has keyboard focus.
   final FocusNode focusNode;

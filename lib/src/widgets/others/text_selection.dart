@@ -74,6 +74,7 @@ class EditorTextSelectionOverlay {
     required this.contextMenuBuilder,
     this.clipboardStatus,
     this.onSelectionHandleTapped,
+    this.onSelectionHandleMoved,
     this.dragStartBehavior = DragStartBehavior.start,
     this.handlesVisible = false,
   }) {
@@ -199,6 +200,8 @@ class EditorTextSelectionOverlay {
   /// {@endtemplate}
   final VoidCallback? onSelectionHandleTapped;
 
+  final VoidCallback? onSelectionHandleMoved;
+
   /// Maintains the status of the clipboard for determining if its contents can
   /// be pasted or not.
   ///
@@ -277,8 +280,7 @@ class EditorTextSelectionOverlay {
     toolbar = OverlayEntry(builder: (context) {
       return contextMenuBuilder!(context);
     });
-    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
-        .insert(toolbar!);
+    Overlay.of(context, debugRequiredFor: debugRequiredFor).insert(toolbar!);
 
     // make sure handles are visible as well
     if (_handles == null) {
@@ -298,6 +300,7 @@ class EditorTextSelectionOverlay {
           editorTextSelectionOverlay: this,
           onSelectionHandleChanged: (newSelection) {
             _handleSelectionHandleChanged(newSelection, position);
+            onSelectionHandleMoved?.call();
           },
           onSelectionHandleTapped: onSelectionHandleTapped,
           onSelectionHandleEnd: hideMagnifier,
@@ -410,7 +413,7 @@ class EditorTextSelectionOverlay {
               _buildHandle(context, _TextSelectionHandlePosition.end)),
     ];
 
-    Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
+    Overlay.of(context, debugRequiredFor: debugRequiredFor)
         .insertAll(_handles!);
   }
 
@@ -1180,6 +1183,7 @@ class _EditorTextSelectionGestureDetectorState
       gestures[LongPressGestureRecognizer] =
           GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
         () => LongPressGestureRecognizer(
+            duration: Duration(milliseconds: 290),
             debugOwner: this,
             supportedDevices: <PointerDeviceKind>{PointerDeviceKind.touch}),
         (instance) {
