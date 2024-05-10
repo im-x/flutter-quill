@@ -677,24 +677,9 @@ class _TextSelectionHandleOverlayState
 
   void _handleDragUpdate(DragUpdateDetails details) {
     _dragPosition += details.delta;
-
-    _endHandleDragPosition =
-        _getHandleDy(details.globalPosition.dy, _endHandleDragPosition);
-    final Offset adjustedOffset = Offset(
-      details.globalPosition.dx,
-      (_endHandleDragPosition + _endHandleDragPositionToCenterOfLine).abs(),
-    );
-    final TextPosition position =
-        widget.renderObject.getPositionForOffset(adjustedOffset);
-
+    final position =
+        widget.renderObject.getPositionForOffset(details.globalPosition);
     if (widget.selection.isCollapsed) {
-      widget.editorTextSelectionOverlay
-          .updateMagnifierInfo(widget.editorTextSelectionOverlay.buildMagnifier(
-        currentTextPosition: position,
-        globalGesturePosition: details.globalPosition,
-        renderEditable: widget.renderObject,
-      ));
-
       widget.onSelectionHandleChanged(TextSelection.fromPosition(position));
       return;
     }

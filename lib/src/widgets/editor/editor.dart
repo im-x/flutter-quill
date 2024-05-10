@@ -424,14 +424,8 @@ class _QuillEditorSelectionGestureDetectorBuilder
         cause: SelectionChangedCause.longPress,
       );
       if (textSelectionOverlay != null && renderEditor!.selection.isCollapsed) {
-        _endHandleDragPosition =
-            _getHandleDy(details.globalPosition.dy, _endHandleDragPosition);
-        final adjustedOffset = Offset(
-          details.globalPosition.dx,
-          (_endHandleDragPosition + _endHandleDragPositionToCenterOfLine).abs(),
-        );
-        final position = renderEditor!.getPositionForOffset(adjustedOffset);
-
+        final position =
+            renderEditor!.getPositionForOffset(details.globalPosition);
         textSelectionOverlay!
             .updateMagnifierInfo(textSelectionOverlay!.buildMagnifier(
           currentTextPosition: position,
