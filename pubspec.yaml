@@ -51,7 +51,7 @@ dependencies:
   meta: ^1.10.0
   html: ^0.15.4
 
-  flutter_colorpicker: ^1.0.3
+  flutter_colorpicker: ^1.1.0
 
   # For converting HTML to Quill delta
   markdown: ^7.2.1
