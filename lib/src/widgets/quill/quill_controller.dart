@@ -58,8 +58,9 @@ class QuillController extends ChangeNotifier {
     if (selection == null) {
       final delta = d.toDelta();
       final index = delta.transformPosition(delta.length - 1);
-      _updateSelection(TextSelection(baseOffset: index, extentOffset: index),
-          ChangeSource.local);
+      _updateSelection(
+        TextSelection(baseOffset: index, extentOffset: index),
+      );
     } else {
       _selection = selection;
     }
@@ -544,6 +545,18 @@ class QuillController extends ChangeNotifier {
       ),
     );
     ignoreFocusOnTextChange = true;
+  }
+
+  static void copyAllOnClipBoard(Document doc) {
+    const start = 0;
+    final end = doc.length;
+    try {
+      final plainText = doc.getPlainText(0, end);
+      final styleAndEmbed = doc.collectAllIndividualStyleAndEmbed(start, end);
+      _pastePlainText = plainText;
+      _pasteStyleAndEmbed = styleAndEmbed;
+      Clipboard.setData(ClipboardData(text: _pastePlainText));
+    } catch (e) {}
   }
 
   bool clipboardSelection(bool copy) {

@@ -115,18 +115,6 @@ class QuillRawEditorState extends EditorState
         .call(content);
   }
 
-  static void copyAllOnClipBoard(Document doc) {
-    const start = 0;
-    final end = doc.length;
-    try {
-      final plainText = doc.getPlainText(0, end);
-      final styleAndEmbed = doc.collectAllIndividualStyleAndEmbed(start, end);
-      _pastePlainText = plainText;
-      _pasteStyleAndEmbed = styleAndEmbed;
-      Clipboard.setData(ClipboardData(text: _pastePlainText));
-    } catch (e) {}
-  }
-
   /// Copy current selection to [Clipboard].
   @override
   void copySelection(SelectionChangedCause cause) {
