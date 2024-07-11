@@ -16,6 +16,7 @@ import 'buttons/search_configurations.dart';
 import 'buttons/select_alignment_configurations.dart';
 import 'buttons/select_header_style_buttons_configurations.dart';
 import 'buttons/select_header_style_dropdown_button_configurations.dart';
+import 'buttons/select_line_height_style_dropdown_button_configurations.dart';
 import 'buttons/toggle_check_list_configurations.dart';
 import 'buttons/toggle_style_configurations.dart';
 
@@ -72,9 +73,14 @@ class QuillSimpleToolbarButtonOptions extends Equatable {
         const QuillToolbarSelectHeaderStyleButtonsOptions(),
     this.selectHeaderStyleDropdownButton =
         const QuillToolbarSelectHeaderStyleDropdownButtonOptions(),
+    this.selectLineHeightStyleDropdownButton =
+        const QuillToolbarSelectLineHeightStyleDropdownButtonOptions(),
     this.linkStyle = const QuillToolbarLinkStyleButtonOptions(),
     this.linkStyle2 = const QuillToolbarLinkStyleButton2Options(),
     this.customButtons = const QuillToolbarCustomButtonOptions(),
+    this.clipboardCut = const QuillToolbarToggleStyleButtonOptions(),
+    this.clipboardCopy = const QuillToolbarToggleStyleButtonOptions(),
+    this.clipboardPaste = const QuillToolbarToggleStyleButtonOptions(),
   });
 
   /// The base configurations for all the buttons which will apply to all
@@ -113,6 +119,10 @@ class QuillSimpleToolbarButtonOptions extends Equatable {
 
   final QuillToolbarSearchButtonOptions search;
 
+  final QuillToolbarToggleStyleButtonOptions clipboardCut;
+  final QuillToolbarToggleStyleButtonOptions clipboardCopy;
+  final QuillToolbarToggleStyleButtonOptions clipboardPaste;
+
   /// The reason we call this buttons in the end because this is responsible
   /// for all the header style buttons and not just one, you still
   /// can customize it and you also have child builder
@@ -123,6 +133,9 @@ class QuillSimpleToolbarButtonOptions extends Equatable {
   /// can customize it and you also have child builder
   final QuillToolbarSelectHeaderStyleDropdownButtonOptions
       selectHeaderStyleDropdownButton;
+
+  final QuillToolbarSelectLineHeightStyleDropdownButtonOptions
+      selectLineHeightStyleDropdownButton;
 
   final QuillToolbarLinkStyleButtonOptions linkStyle;
   final QuillToolbarLinkStyleButton2Options linkStyle2;

@@ -172,6 +172,10 @@ class QuillEditorState extends State<QuillEditor>
   @override
   void initState() {
     super.initState();
+    widget.configurations.controller.editorFocusNode ??= widget.focusNode;
+    if (configurations.autoFocus) {
+      widget.configurations.controller.editorFocusNode?.requestFocus();
+    }
     _editorKey = configurations.editorKey ?? GlobalKey<EditorState>();
     _selectionGestureDetectorBuilder =
         _QuillEditorSelectionGestureDetectorBuilder(
@@ -235,6 +239,7 @@ class QuillEditorState extends State<QuillEditor>
               scrollBottomInset: configurations.scrollBottomInset,
               padding: configurations.padding,
               readOnly: configurations.readOnly,
+              checkBoxReadOnly: configurations.checkBoxReadOnly,
               disableClipboard: configurations.disableClipboard,
               placeholder: configurations.placeholder,
               onLaunchUrl: configurations.onLaunchUrl,
@@ -278,6 +283,7 @@ class QuillEditorState extends State<QuillEditor>
               customRecognizerBuilder: configurations.customRecognizerBuilder,
               floatingCursorDisabled: configurations.floatingCursorDisabled,
               onImagePaste: configurations.onImagePaste,
+              onGifPaste: configurations.onGifPaste,
               customShortcuts: configurations.customShortcuts,
               customActions: configurations.customActions,
               customLinkPrefixes: configurations.customLinkPrefixes,
@@ -290,6 +296,7 @@ class QuillEditorState extends State<QuillEditor>
               onScribbleActivated: configurations.onScribbleActivated,
               scribbleAreaInsets: configurations.scribbleAreaInsets,
               onSubmitted: configurations.onSubmitted,
+              readOnlyMouseCursor: configurations.readOnlyMouseCursor,
             ),
           ),
         ),
