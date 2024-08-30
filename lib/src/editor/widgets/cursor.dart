@@ -307,7 +307,7 @@ class CursorPainter {
           caretRect.left,
           caretRect.top - 2.0,
           caretRect.width,
-          caretHeight,
+          caretHeight + 2.0,
         );
       }
     }
