@@ -119,7 +119,7 @@ class QuillRawEditorState extends EditorState
     try {
       final plainText = doc.getPlainText(0, end);
       final styleAndEmbed = doc.collectAllIndividualStyleAndEmbed(start, end);
-      QuillController.setCopyState(plainText, styleAndEmbed);
+      QuillController.setCopyState(plainText, styleAndEmbed, doc.toDelta());
       Clipboard.setData(ClipboardData(text: plainText));
     } catch (e) {}
   }

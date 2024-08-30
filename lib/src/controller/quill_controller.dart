@@ -534,9 +534,10 @@ class QuillController extends ChangeNotifier {
   static Delta _pasteDelta = Delta();
   static List<OffsetValue> _pasteStyleAndEmbed = <OffsetValue>[];
   static void setCopyState(
-      String plainText, List<OffsetValue<dynamic>> styleAndEmbed) {
+      String plainText, List<OffsetValue<dynamic>> styleAndEmbed, Delta delta) {
     _pastePlainText = plainText;
     _pasteStyleAndEmbed = styleAndEmbed;
+    _pasteDelta = delta;
   }
 
   String get pastePlainText => _pastePlainText;
