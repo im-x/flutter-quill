@@ -163,6 +163,10 @@ class QuillRawEditorState extends EditorState
       return;
     }
 
+    if (cause == SelectionChangedCause.toolbar) {
+      hideToolbar();
+    }
+
     if (await controller.clipboardPaste()) {
       bringIntoView(textEditingValue.selection.extent);
       return;

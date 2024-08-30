@@ -225,6 +225,49 @@ mixin RawEditorStateTextInputClientMixin on EditorState
   @override
   void performAction(TextInputAction action) {
     widget.configurations.onPerformAction?.call(action);
+    switch (action) {
+      case TextInputAction.send:
+        _finalizeEditing(action, shouldUnfocus: false);
+        break;
+      default:
+        break;
+    }
+  }
+
+  @pragma('vm:notify-debugger-on-exception')
+  void _finalizeEditing(TextInputAction action, {required bool shouldUnfocus}) {
+    if (shouldUnfocus) {
+      switch (action) {
+        case TextInputAction.none:
+        case TextInputAction.unspecified:
+        case TextInputAction.done:
+        case TextInputAction.go:
+        case TextInputAction.search:
+        case TextInputAction.send:
+        case TextInputAction.continueAction:
+        case TextInputAction.join:
+        case TextInputAction.route:
+        case TextInputAction.emergencyCall:
+          widget.configurations.focusNode.unfocus();
+          break;
+        case TextInputAction.next:
+          widget.configurations.focusNode.nextFocus();
+          break;
+        case TextInputAction.previous:
+          widget.configurations.focusNode.previousFocus();
+          break;
+        case TextInputAction.newline:
+          break;
+      }
+    }
+
+    // Invoke optional callback with the user's submitted content.
+    try {
+      if (action == TextInputAction.send) {
+        widget.configurations.onSubmitted?.call("");
+      }
+      // widget.onSubmitted?.call(_value.text);
+    } catch (exception, stack) {}
   }
 
   @override
