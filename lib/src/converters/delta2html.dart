@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:quiver/strings.dart';
 import '../../flutter_quill.dart';
 import '../../quill_delta.dart';
-import '../utils/quill_data.dart';
+import '../common/utils/quill_data.dart';
 
 /// Delta -> HTML
 class Delta2HtmlEncoder extends Converter<Delta, String> {

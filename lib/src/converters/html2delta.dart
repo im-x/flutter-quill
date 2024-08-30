@@ -5,7 +5,7 @@ import 'package:html/parser.dart' as parser;
 import 'package:quiver/strings.dart';
 import '../../flutter_quill.dart';
 import '../../quill_delta.dart';
-import '../utils/quill_data.dart';
+import '../common/utils/quill_data.dart';
 
 enum _HtmlType {
   BLOCK,
