@@ -37,6 +37,29 @@ final Map<String, _HtmlType> _kSupportedHTMLElements = {
   'u': _HtmlType.INLINE,
 };
 
+final Map containerTextColorMap = <String, Map>{
+  'msgcard_container_text_success': <String, String>{
+    'bg': '#EEF5ED',
+    'text': '#038A00',
+  },
+  'msgcard_container_text_warning': <String, String>{
+    'bg': '#FFF4EA',
+    'text': '#EB6D00',
+  },
+  'msgcard_container_text_danger': <String, String>{
+    'bg': '#FFEEEE',
+    'text': '#EB0C32',
+  },
+  'msgcard_container_text_info': <String, String>{
+    'bg': '#F0F2F5',
+    'text': '#646587',
+  },
+  'msgcard_container_text_default': <String, String>{
+    'bg': '#EAF2FF',
+    'text': '#2878FF',
+  },
+};
+
 /// HTML -> Delta
 class Html2DeltaDecoder extends Converter<String, Delta> {
   @override
@@ -192,8 +215,12 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
     required Delta delta,
     required String className,
     required String text,
+    Map<String, dynamic>? attributes,
   }) {
-    delta.insert(InlineEmbed.containerText(className, text));
+    delta.insert(
+      InlineEmbed.containerText(className, text),
+      attributes,
+    );
   }
 
   void _insertText({
@@ -382,6 +409,14 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
         if (backgroundColor != null) {
           attributes[Attribute.background.key] = backgroundColor;
         }
+
+        final spanClassName = _getSpanClassName(element.className);
+        if (spanClassName != null &&
+            containerTextColorMap.containsKey(spanClassName)) {
+          final containerData = containerTextColorMap[spanClassName];
+          attributes[Attribute.color.key] = containerData['text'];
+          attributes[Attribute.background.key] = containerData['bg'];
+        }
       }
 
       if (element.children.isEmpty) {
@@ -391,6 +426,7 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
             delta: delta,
             className: element.className,
             text: element.text,
+            attributes: attributes,
           );
         } else {
           _insertText(
