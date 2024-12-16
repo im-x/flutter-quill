@@ -31,30 +31,30 @@ class QuillEditorNumberPoint extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!attrs.containsKey(Attribute.indent.key) && indentLevelCounts.isEmpty) {
       return Container(
-        alignment: AlignmentDirectional.topEnd,
+        // alignment: AlignmentDirectional.topEnd,
         width: width,
-        padding: EdgeInsetsDirectional.only(end: padding),
+        padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
         color: backgroundColor,
         child: context.quillEditorConfigurations?.elementOptions.orderedList
                 .customWidget ??
             Text(
               withDot ? '$index.' : index,
               style: style,
-              textAlign: textAlign,
+              textAlign: textAlign ?? TextAlign.left,
             ),
       );
     }
     return Container(
-      alignment: AlignmentDirectional.topEnd,
+      // alignment: AlignmentDirectional.topEnd,
       width: width,
-      padding: EdgeInsetsDirectional.only(end: padding),
+      padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
       color: backgroundColor,
       child: context.quillEditorConfigurations?.elementOptions.orderedList
               .customWidget ??
           Text(
             withDot ? '$index.' : index,
             style: style,
-            textAlign: textAlign,
+            textAlign: textAlign ?? TextAlign.left,
           ),
     );
   }

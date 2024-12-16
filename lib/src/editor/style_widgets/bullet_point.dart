@@ -21,16 +21,16 @@ class QuillEditorBulletPoint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      alignment: AlignmentDirectional.topEnd,
+      // alignment: AlignmentDirectional.topEnd,
       width: width,
-      padding: EdgeInsetsDirectional.only(end: padding),
+      padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
       color: backgroundColor,
       child: context.quillEditorConfigurations?.elementOptions.unorderedList
               .customWidget ??
           Text(
             '•',
             style: style,
-            textAlign: textAlign,
+            textAlign: textAlign ?? TextAlign.left,
           ),
     );
   }

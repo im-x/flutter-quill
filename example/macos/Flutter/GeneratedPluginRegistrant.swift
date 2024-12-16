@@ -13,7 +13,7 @@ import gal
 import irondash_engine_context
 import path_provider_foundation
 import share_plus
-import sqflite
+import sqflite_darwin
 import super_native_extensions
 import url_launcher_macos
 import video_player_avfoundation

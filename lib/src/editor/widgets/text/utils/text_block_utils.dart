@@ -40,8 +40,9 @@ class TextBlockUtils {
     var baseIndent = 0.0;
 
     if (attrs.containsKey(Attribute.list.key)) {
-      baseIndent = fontSize * 2;
+      baseIndent = fontSize * 1.35;
       if (attrs[Attribute.list.key] == Attribute.ol) {
+        baseIndent = fontSize * 1.35;
         baseIndent = numberPointWidthBuilder(fontSize, count);
       } else if (attrs.containsKey(Attribute.codeBlock.key)) {
         baseIndent = numberPointWidthBuilder(fontSize, count);
@@ -53,12 +54,13 @@ class TextBlockUtils {
 
   /// Get the width for the number point leading using the default
   /// implementation provided by [Flutter Quill]
-  static double defaultNumberPointWidthBuilder(double fontSize, int count) {
+  static double defaultNumberPointWidthBuilder(double fontSize, int count,
+      {bool isOL = false}) {
     final length = '$count'.length;
     switch (length) {
       case 1:
       case 2:
-        return fontSize * 2;
+        return fontSize * 1.35;
       default:
         // 3 -> 2.5
         // 4 -> 3
