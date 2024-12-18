@@ -33,7 +33,6 @@ class QuillEditorNumberPoint extends StatelessWidget {
       return Container(
         // alignment: AlignmentDirectional.topEnd,
         width: width,
-        padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
         color: backgroundColor,
         child: context.quillEditorConfigurations?.elementOptions.orderedList
                 .customWidget ??
@@ -47,7 +46,6 @@ class QuillEditorNumberPoint extends StatelessWidget {
     return Container(
       // alignment: AlignmentDirectional.topEnd,
       width: width,
-      padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
       color: backgroundColor,
       child: context.quillEditorConfigurations?.elementOptions.orderedList
               .customWidget ??

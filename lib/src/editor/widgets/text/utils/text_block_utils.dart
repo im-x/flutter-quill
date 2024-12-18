@@ -42,7 +42,6 @@ class TextBlockUtils {
     if (attrs.containsKey(Attribute.list.key)) {
       baseIndent = fontSize * 1.35;
       if (attrs[Attribute.list.key] == Attribute.ol) {
-        baseIndent = fontSize * 1.35;
         baseIndent = numberPointWidthBuilder(fontSize, count);
       } else if (attrs.containsKey(Attribute.codeBlock.key)) {
         baseIndent = numberPointWidthBuilder(fontSize, count);
@@ -59,8 +58,11 @@ class TextBlockUtils {
     final length = '$count'.length;
     switch (length) {
       case 1:
-      case 2:
         return fontSize * 1.35;
+      case 2:
+        return fontSize * 1.5;
+      case 3:
+        return fontSize * 1.7;
       default:
         // 3 -> 2.5
         // 4 -> 3
