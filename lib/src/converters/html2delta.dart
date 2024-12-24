@@ -260,7 +260,14 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
           continue;
         } else if (item.startsWith('[#') && item.endsWith('#]')) {
           final topicName = item.substring(2, item.length - 2);
-          delta.insert(InlineEmbed.topic(topicName));
+          if (topicName.startsWith('tid:')) {
+            final topicList = topicName.split('|');
+            final tid = topicList[0].substring(4);
+            final topic = topicList[1];
+            delta.insert(InlineEmbed.topic(topic, tid: tid));
+          } else {
+            delta.insert(InlineEmbed.topic(topicName));
+          }
           continue;
         } else if (item.startsWith('[%') && item.endsWith('%]')) {
           final editName = item.substring(2, item.length - 2);

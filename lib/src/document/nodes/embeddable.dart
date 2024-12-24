@@ -86,8 +86,19 @@ class InlineEmbed extends Embeddable {
       InlineEmbed(mentionName, info);
 
   static const topicName = 'topic';
-  static InlineEmbed topic(String name) => InlineEmbed(topicName, name);
-  static String getTopicHtml(String name) => '<p>[#$name#]</p>';
+  static InlineEmbed topic(String name, {String tid = ''}) => InlineEmbed(
+        topicName,
+        {
+          'name': name,
+          'tid': tid,
+        },
+      );
+  static String getTopicHtml(String name, {String tid = ''}) {
+    if (tid.isEmpty) {
+      return '<p>[#$name#]</p>';
+    }
+    return '<p>[#tid:$tid|$name#]</p>';
+  }
 
   static const editName = 'edited';
   static InlineEmbed edit(String name) => InlineEmbed(editName, name);
@@ -121,7 +132,8 @@ class InlineEmbed extends Embeddable {
         return '@未知用户';
       }
     } else if (type == topicName) {
-      return '#${data.toString()}#';
+      final map = data as Map<String, String>;
+      return '#${map['name']}#';
     }
     return '';
   }

@@ -31,7 +31,7 @@ class QuillData {
   );
 
   static RegExp kInlineEmbedRegex = RegExp(
-    r'\[@-?\d+:[\u4e00-\u9fa5A-Za-z0-9() _-]*?\]|\[:.+?\]|\[#.+?#\]|\[%.+?%\]',
+    r'\[@-?\d+:[\u4e00-\u9fa5A-Za-z0-9() _-]*?\]|\[:.+?\]|\[#(?:tid:(\d+)\|)?(.+?)#\]|\[%.+?%\]',
   );
 
   static RegExp? kLinkRegex = RegExp(
