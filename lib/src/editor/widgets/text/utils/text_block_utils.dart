@@ -58,11 +58,8 @@ class TextBlockUtils {
     final length = '$count'.length;
     switch (length) {
       case 1:
-        return fontSize * 1.35;
       case 2:
-        return fontSize * 1.5;
-      case 3:
-        return fontSize * 1.7;
+        return fontSize * 2;
       default:
         // 3 -> 2.5
         // 4 -> 3

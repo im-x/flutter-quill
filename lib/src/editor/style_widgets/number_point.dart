@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import '../../../flutter_quill.dart';
 
@@ -31,28 +33,34 @@ class QuillEditorNumberPoint extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!attrs.containsKey(Attribute.indent.key) && indentLevelCounts.isEmpty) {
       return Container(
-        // alignment: AlignmentDirectional.topEnd,
+        alignment: AlignmentDirectional.topEnd,
         width: width,
+        padding: EdgeInsets.only(right: index.length > 1 ? 0 : 6),
         color: backgroundColor,
         child: context.quillEditorConfigurations?.elementOptions.orderedList
                 .customWidget ??
             Text(
               withDot ? '$index.' : index,
-              style: style,
-              textAlign: textAlign ?? TextAlign.left,
+              style: style.copyWith(
+                fontFeatures: [const FontFeature.tabularFigures()],
+              ),
+              textAlign: TextAlign.right,
             ),
       );
     }
     return Container(
-      // alignment: AlignmentDirectional.topEnd,
+      alignment: AlignmentDirectional.topEnd,
       width: width,
+      padding: EdgeInsets.only(right: index.length > 1 ? 0 : 6),
       color: backgroundColor,
       child: context.quillEditorConfigurations?.elementOptions.orderedList
               .customWidget ??
           Text(
             withDot ? '$index.' : index,
-            style: style,
-            textAlign: textAlign ?? TextAlign.left,
+            style: style.copyWith(
+              fontFeatures: [const FontFeature.tabularFigures()],
+            ),
+            textAlign: TextAlign.right,
           ),
     );
   }
