@@ -1,19 +1,16 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
 import '../../common/utils/element_utils/element_utils.dart';
-import '../../common/utils/utils.dart';
-import 'models/video_configurations.dart';
+import 'config/video_config.dart';
 import 'widgets/video_app.dart';
-import 'widgets/youtube_video_app.dart';
 
 class QuillEditorVideoEmbedBuilder extends EmbedBuilder {
   const QuillEditorVideoEmbedBuilder({
-    required this.configurations,
+    required this.config,
   });
 
-  final QuillEditorVideoEmbedConfigurations configurations;
+  final QuillEditorVideoEmbedConfig config;
 
   @override
   String get key => BlockEmbed.videoType;
@@ -24,24 +21,20 @@ class QuillEditorVideoEmbedBuilder extends EmbedBuilder {
   @override
   Widget build(
     BuildContext context,
-    QuillController controller,
-    Embed node,
-    bool readOnly,
-    bool inline,
-    TextStyle textStyle,
+    EmbedContext embedContext,
   ) {
-    assert(!kIsWeb, 'Please provide video EmbedBuilder for Web');
+    final videoUrl = embedContext.node.value.data;
 
-    final videoUrl = node.value.data;
-    if (isYouTubeUrl(videoUrl)) {
-      return YoutubeVideoApp(
-        videoUrl: videoUrl,
-        readOnly: readOnly,
-        youtubeVideoSupportMode: configurations.youtubeVideoSupportMode,
-      );
+    final customVideoBuilder = config.customVideoBuilder;
+    if (customVideoBuilder != null) {
+      final videoWidget = customVideoBuilder(videoUrl, embedContext.readOnly);
+      if (videoWidget != null) {
+        return videoWidget;
+      }
     }
+
     final ((elementSize), margin, alignment) = getElementAttributes(
-      node,
+      embedContext.node,
       context,
     );
 
@@ -54,8 +47,8 @@ class QuillEditorVideoEmbedBuilder extends EmbedBuilder {
       alignment: alignment,
       child: VideoApp(
         videoUrl: videoUrl,
-        readOnly: readOnly,
-        onVideoInit: configurations.onVideoInit,
+        readOnly: embedContext.readOnly,
+        onVideoInit: config.onVideoInit,
       ),
     );
   }

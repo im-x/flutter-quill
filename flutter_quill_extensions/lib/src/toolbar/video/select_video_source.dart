@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_quill/extensions.dart' show isDesktop;
-import 'package:flutter_quill/translations.dart';
+import 'package:flutter_quill/internal.dart';
 
-import 'models/video.dart';
+import 'config/video.dart';
 
 class SelectVideoSourceDialog extends StatelessWidget {
   const SelectVideoSourceDialog({super.key});
@@ -27,7 +26,7 @@ class SelectVideoSourceDialog extends StatelessWidget {
               title: Text(context.loc.camera),
               subtitle: Text(context.loc.recordAVideoUsingYourCamera),
               leading: const Icon(Icons.camera),
-              enabled: !isDesktop(supportWeb: false),
+              enabled: !isDesktopApp,
               onTap: () => Navigator.of(context).pop(InsertVideoSource.camera),
             ),
             ListTile(
@@ -52,8 +51,7 @@ Future<InsertVideoSource?> showSelectVideoSourceDialog({
     showDragHandle: true,
     context: context,
     constraints: const BoxConstraints(maxWidth: 640),
-    builder: (context) =>
-        const FlutterQuillLocalizationsWidget(child: SelectVideoSourceDialog()),
+    builder: (context) => const SelectVideoSourceDialog(),
   );
   return imageSource;
 }

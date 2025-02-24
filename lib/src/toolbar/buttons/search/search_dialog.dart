@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../extensions.dart';
+import '../../../common/utils/platform.dart';
 import '../../../controller/quill_controller.dart';
 import '../../../document/document.dart';
+import '../../../document/nodes/leaf.dart';
 import '../../../l10n/extensions/localizations_ext.dart';
-import '../../../l10n/widgets/localizations.dart';
 import '../../theme/quill_dialog_theme.dart';
 
 @immutable
@@ -111,7 +111,7 @@ class QuillToolbarSearchDialogState extends State<QuillToolbarSearchDialog> {
     final searchBarAtBottom = (searchBarAlignment == Alignment.bottomCenter) ||
         (searchBarAlignment == Alignment.bottomLeft) ||
         (searchBarAlignment == Alignment.bottomRight);
-    final addBottomPadding = searchBarAtBottom && isMobile(supportWeb: true);
+    final addBottomPadding = searchBarAtBottom && isMobile;
     var matchShown = '';
     if (_text.isNotEmpty) {
       if (_offsets.isEmpty) {
@@ -227,21 +227,17 @@ class QuillToolbarSearchDialogState extends State<QuillToolbarSearchDialog> {
       backgroundColor: widget.dialogTheme?.dialogBackgroundColor,
       alignment: searchBarAlignment,
       insetPadding: EdgeInsets.zero,
-      child: FlutterQuillLocalizationsWidget(
-        child: Builder(
-          builder: (context) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_searchSettingsUnfolded && searchBarAtBottom)
-                  searchSettings,
-                searchBar,
-                if (_searchSettingsUnfolded && !searchBarAtBottom)
-                  searchSettings,
-              ],
-            );
-          },
-        ),
+      child: Builder(
+        builder: (context) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchSettingsUnfolded && searchBarAtBottom) searchSettings,
+              searchBar,
+              if (_searchSettingsUnfolded && !searchBarAtBottom) searchSettings,
+            ],
+          );
+        },
       ),
     );
   }

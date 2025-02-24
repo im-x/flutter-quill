@@ -9,10 +9,9 @@ import '../../../delta/delta_diff.dart';
 import '../../../document/attribute.dart';
 import '../../../document/nodes/block.dart';
 import '../../../document/nodes/line.dart';
-import '../../../toolbar/base_toolbar.dart';
+import '../../../editor_toolbar_shared/color.dart';
 import '../../editor.dart';
 import '../../embed/embed_editor_builder.dart';
-import '../../provider.dart';
 import '../../raw_editor/builders/leading_block_builder.dart';
 import '../box.dart';
 import '../cursor.dart';
@@ -71,6 +70,7 @@ class EditableTextBlock extends StatelessWidget {
     required this.hasFocus,
     required this.contentPadding,
     required this.embedBuilder,
+    required this.textSpanBuilder,
     required this.linkActionPicker,
     required this.cursorCont,
     required this.indentLevelCounts,
@@ -78,6 +78,7 @@ class EditableTextBlock extends StatelessWidget {
     required this.onCheckboxTap,
     required this.readOnly,
     required this.customRecognizerBuilder,
+    required this.composingRange,
     this.checkBoxReadOnly,
     this.onLaunchUrl,
     this.customStyleBuilder,
@@ -100,6 +101,7 @@ class EditableTextBlock extends StatelessWidget {
   final bool hasFocus;
   final EdgeInsets? contentPadding;
   final EmbedsBuilder embedBuilder;
+  final TextSpanBuilder textSpanBuilder;
   final LinkActionPicker linkActionPicker;
   final ValueChanged<String>? onLaunchUrl;
   final CustomRecognizerBuilder? customRecognizerBuilder;
@@ -111,6 +113,7 @@ class EditableTextBlock extends StatelessWidget {
   final bool readOnly;
   final bool? checkBoxReadOnly;
   final List<String> customLinkPrefixes;
+  final TextRange composingRange;
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +188,7 @@ class EditableTextBlock extends StatelessWidget {
           line: line,
           textDirection: textDirection,
           embedBuilder: embedBuilder,
+          textSpanBuilder: textSpanBuilder,
           customStyleBuilder: customStyleBuilder,
           styles: styles!,
           readOnly: readOnly,
@@ -193,6 +197,7 @@ class EditableTextBlock extends StatelessWidget {
           onLaunchUrl: onLaunchUrl,
           customLinkPrefixes: customLinkPrefixes,
           customRecognizerBuilder: customRecognizerBuilder,
+          composingRange: composingRange,
         ),
         indentWidthBuilder(block, context, count, numberPointWidthBuilder),
         _getSpacingForLine(line, index, count, defaultStyles),
@@ -203,6 +208,7 @@ class EditableTextBlock extends StatelessWidget {
         hasFocus,
         MediaQuery.devicePixelRatioOf(context),
         cursorCont,
+        styles!.inlineCode!,
       );
       final nodeTextDirection = getDirectionOfNode(line, textDirection);
       children.add(
@@ -262,47 +268,52 @@ class EditableTextBlock extends StatelessWidget {
         attribute == Attribute.checked || attribute == Attribute.unchecked;
     final isCodeBlock = attrs.containsKey(Attribute.codeBlock.key);
     if (attribute == null) return null;
-    final leadingConfigurations = LeadingConfigurations(
+    final leadingConfig = LeadingConfig(
       attribute: attribute,
       attrs: attrs,
       indentLevelCounts: indentLevelCounts,
       index: isOrdered || isCodeBlock ? index : null,
       count: count,
       enabled: !isCheck ? null : !(checkBoxReadOnly ?? readOnly),
-      style: isOrdered
-          ? defaultStyles.leading!.style.copyWith(
-              fontSize: size,
-              color: context.quillEditorElementOptions?.orderedList
-                          .useTextColorForDot ==
-                      true
-                  ? fontColor
-                  : null,
-            )
-          : isUnordered
-              ? defaultStyles.leading!.style.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: size,
-                  color: context.quillEditorElementOptions?.unorderedList
-                              .useTextColorForDot ==
-                          true
-                      ? fontColor
-                      : null,
-                )
-              : isCheck
-                  ? null
-                  : defaultStyles.code!.style.copyWith(
-                      color: defaultStyles.code!.style.color!.withOpacity(0.4),
-                    ),
-      width: isOrdered || isCodeBlock
-          ? numberPointWidthBuilder(fontSize, count)
-          : isUnordered
-              ? numberPointWidthBuilder(fontSize, 1) // same as fontSize * 2
-              : null,
-      padding: isOrdered || isUnordered
-          ? fontSize / 2
-          : isCodeBlock
-              ? fontSize
-              : null,
+      style: () {
+        if (isOrdered) {
+          return defaultStyles.leading!.style.copyWith(
+            fontSize: size,
+            color: fontColor,
+          );
+        }
+        if (isUnordered) {
+          return defaultStyles.leading!.style.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: size,
+            color: fontColor,
+          );
+        }
+        if (isCheck) {
+          return null;
+        }
+        return defaultStyles.code!.style.copyWith(
+          color: defaultStyles.code!.style.color!.withValues(alpha: 0.4),
+        );
+      }(),
+      width: () {
+        if (isOrdered || isCodeBlock) {
+          return numberPointWidthBuilder(fontSize, count);
+        }
+        if (isUnordered) {
+          return numberPointWidthBuilder(fontSize, 1); // same as fontSize * 2
+        }
+        return null;
+      }(),
+      padding: () {
+        if (isOrdered || isUnordered) {
+          return fontSize / 2;
+        }
+        if (isCodeBlock) {
+          return fontSize;
+        }
+        return null;
+      }(),
       lineSize: isCheck ? fontSize : null,
       uiBuilder: isCheck ? defaultStyles.lists?.checkboxUIBuilder : null,
       value: attribute == Attribute.checked,
@@ -313,7 +324,7 @@ class EditableTextBlock extends StatelessWidget {
     if (customLeadingBlockBuilder != null) {
       final leadingBlockNodeBuilder = customLeadingBlockBuilder?.call(
         line,
-        leadingConfigurations,
+        leadingConfig,
       );
       if (leadingBlockNodeBuilder != null) {
         return leadingBlockNodeBuilder;
@@ -321,19 +332,18 @@ class EditableTextBlock extends StatelessWidget {
     }
 
     if (isOrdered) {
-      return numberPointLeading(leadingConfigurations);
+      return numberPointLeading(leadingConfig);
     }
 
     if (isUnordered) {
-      return bulletPointLeading(leadingConfigurations);
+      return bulletPointLeading(leadingConfig);
     }
 
     if (isCheck) {
-      return checkboxLeading(leadingConfigurations);
+      return checkboxLeading(leadingConfig);
     }
-    if (isCodeBlock &&
-        context.requireQuillEditorElementOptions.codeBlock.enableLineNumbers) {
-      return codeBlockLineNumberLeading(leadingConfigurations);
+    if (isCodeBlock) {
+      return codeBlockLineNumberLeading(leadingConfig);
     }
     return null;
   }

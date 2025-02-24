@@ -1,96 +1,82 @@
-import 'package:flutter/services.dart' show Clipboard, Uint8List;
+import 'dart:io' as io;
 
+import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart' show experimental;
+
+import '../../common/utils/quill_native_provider.dart';
 import 'clipboard_service.dart';
 
-/// Default implementation using only internal flutter plugins
-class DefaultClipboardService implements ClipboardService {
+/// Default implementation of [ClipboardService] to support rich clipboard
+/// operations.
+@experimental
+class DefaultClipboardService extends ClipboardService {
   @override
-  Future<bool> canProvideHtmlText() async {
-    return false;
+  Future<String?> getHtmlText() async {
+    if (!(await QuillNativeProvider.instance
+        .isSupported(QuillNativeBridgeFeature.getClipboardHtml))) {
+      return null;
+    }
+    return await QuillNativeProvider.instance.getClipboardHtml();
   }
 
   @override
-  Future<String?> getHtmlText() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving HTML text.',
+  Future<Uint8List?> getImageFile() async {
+    if (!(await QuillNativeProvider.instance
+        .isSupported(QuillNativeBridgeFeature.getClipboardImage))) {
+      return null;
+    }
+    return await QuillNativeProvider.instance.getClipboardImage();
+  }
+
+  @override
+  Future<void> copyImage(Uint8List imageBytes) async {
+    if (!(await QuillNativeProvider.instance
+        .isSupported(QuillNativeBridgeFeature.copyImageToClipboard))) {
+      return;
+    }
+    await QuillNativeProvider.instance.copyImageToClipboard(imageBytes);
+  }
+
+  @override
+  Future<Uint8List?> getGifFile() async {
+    if (!(await QuillNativeProvider.instance
+        .isSupported(QuillNativeBridgeFeature.getClipboardGif))) {
+      return null;
+    }
+    return QuillNativeProvider.instance.getClipboardGif();
+  }
+
+  Future<String?> _getClipboardFile({required String fileExtension}) async {
+    if (!(await QuillNativeProvider.instance
+        .isSupported(QuillNativeBridgeFeature.getClipboardFiles))) {
+      return null;
+    }
+    if (kIsWeb) {
+      // TODO: Can't read file with dart:io on the Web (See related https://github.com/FlutterQuill/quill-native-bridge/issues/6)
+      return null;
+    }
+    final filePaths = await QuillNativeProvider.instance.getClipboardFiles();
+    final filePath = filePaths.firstWhere(
+      (filePath) => filePath.endsWith('.$fileExtension'),
+      orElse: () => '',
     );
+    if (filePath.isEmpty) {
+      // Could not find an item
+      return null;
+    }
+    final fileText = await io.File(filePath).readAsString();
+    return fileText;
   }
 
   @override
-  Future<bool> canProvideHtmlTextFromFile() async {
-    return false;
+  Future<String?> getHtmlFile() async {
+    final htmlFileText = await _getClipboardFile(fileExtension: 'html');
+    return htmlFileText;
   }
 
   @override
-  Future<String?> getHtmlTextFromFile() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving HTML files.',
-    );
-  }
-
-  @override
-  Future<bool> canProvideMarkdownText() async {
-    return false;
-  }
-
-  @override
-  Future<String?> getMarkdownText() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving HTML files.',
-    );
-  }
-
-  @override
-  Future<bool> canProvideMarkdownTextFromFile() async {
-    return false;
-  }
-
-  @override
-  Future<String?> getMarkdownTextFromFile() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving Markdown text.',
-    );
-  }
-
-  @override
-  Future<bool> canProvidePlainText() async {
-    final plainText = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
-    return plainText == null;
-  }
-
-  @override
-  Future<String?> getPlainText() async {
-    final plainText = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
-    return plainText;
-  }
-
-  @override
-  Future<bool> canProvideImageFile() async {
-    return false;
-  }
-
-  @override
-  Future<Uint8List> getImageFileAsBytes() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving image files.',
-    );
-  }
-
-  @override
-  Future<bool> canProvideGifFile() async {
-    return false;
-  }
-
-  @override
-  Future<Uint8List> getGifFileAsBytes() {
-    throw UnsupportedError(
-      'DefaultClipboardService does not support retrieving GIF files.',
-    );
-  }
-
-  @override
-  Future<bool> canPaste() async {
-    final plainText = await getPlainText();
-    return plainText != null;
+  Future<String?> getMarkdownFile() async {
+    final htmlFileText = await _getClipboardFile(fileExtension: 'md');
+    return htmlFileText;
   }
 }

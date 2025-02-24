@@ -3,7 +3,7 @@ import 'dart:convert' show jsonDecode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter_quill/translations.dart';
+import 'package:flutter_quill/src/l10n/extensions/localizations_ext.dart';
 import 'package:flutter_quill_test/flutter_quill_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,10 +25,7 @@ void main() {
         MaterialApp(
           home: QuillEditor.basic(
             controller: controller,
-            // ignore: avoid_redundant_argument_values
-            configurations: const QuillEditorConfigurations(
-                // ignore: avoid_redundant_argument_values
-                ),
+            config: const QuillEditorConfig(),
           ),
         ),
       );
@@ -45,8 +42,7 @@ void main() {
             focusNode: FocusNode(),
             scrollController: ScrollController(),
             controller: controller,
-            configurations: QuillEditorConfigurations(
-              // ignore: avoid_redundant_argument_values
+            config: QuillEditorConfig(
               autoFocus: true,
               expands: true,
               contentInsertionConfiguration: ContentInsertionConfiguration(
@@ -117,9 +113,7 @@ void main() {
             focusNode: FocusNode(),
             scrollController: ScrollController(),
             controller: controller,
-            // ignore: avoid_redundant_argument_values
-            configurations: QuillEditorConfigurations(
-              // ignore: avoid_redundant_argument_values
+            config: QuillEditorConfig(
               autoFocus: true,
               expands: true,
               contextMenuBuilder: customBuilder,
@@ -140,14 +134,16 @@ void main() {
     });
 
     testWidgets(
-      'make sure QuillEditorOpenSearchAction does not throw an exception',
+      'QuillEditorOpenSearchAction should not throw an exception when the required localization delegates are provided',
       (tester) async {
         final editorFocusNode = FocusNode();
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates:
+                FlutterQuillLocalizations.localizationsDelegates,
             home: QuillEditor.basic(
               controller: controller,
-              configurations: const QuillEditorConfigurations(),
+              config: const QuillEditorConfig(),
               focusNode: editorFocusNode,
             ),
           ),
@@ -199,10 +195,10 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
-            home: FlutterQuillLocalizationsWidget(
-              child: Builder(
-                builder: (context) => Text(context.loc.font),
-              ),
+            localizationsDelegates:
+                FlutterQuillLocalizations.localizationsDelegates,
+            home: Builder(
+              builder: (context) => Text(context.loc.font),
             ),
           ),
         );
@@ -213,6 +209,27 @@ void main() {
         expect(
           exception,
           isNot(isA<MissingFlutterQuillLocalizationException>()),
+        );
+      },
+    );
+
+    testWidgets(
+      'should throw MissingFlutterQuillLocalizationException if the delegate is not provided',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => Text(context.loc.font),
+            ),
+          ),
+        );
+
+        final exception = tester.takeException();
+
+        expect(exception, isNotNull);
+        expect(
+          exception,
+          isA<MissingFlutterQuillLocalizationException>(),
         );
       },
     );

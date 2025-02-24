@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class QuillEditorCheckboxPoint extends StatefulWidget {
-  const QuillEditorCheckboxPoint({
+class QuillCheckboxPoint extends StatefulWidget {
+  const QuillCheckboxPoint({
     required this.size,
     required this.value,
     required this.enabled,
@@ -17,11 +17,10 @@ class QuillEditorCheckboxPoint extends StatefulWidget {
   final QuillCheckboxBuilder? uiBuilder;
 
   @override
-  QuillEditorCheckboxPointState createState() =>
-      QuillEditorCheckboxPointState();
+  QuillCheckboxPointState createState() => QuillCheckboxPointState();
 }
 
-class QuillEditorCheckboxPointState extends State<QuillEditorCheckboxPoint> {
+class QuillCheckboxPointState extends State<QuillCheckboxPoint> {
   @override
   Widget build(BuildContext context) {
     final uiBuilder = widget.uiBuilder;
@@ -36,15 +35,15 @@ class QuillEditorCheckboxPointState extends State<QuillEditorCheckboxPoint> {
     final fillColor = widget.value
         ? (widget.enabled
             ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withOpacity(0.5))
+            : theme.colorScheme.onSurface.withValues(alpha: 0.5))
         : theme.colorScheme.surface;
     final borderColor = widget.value
         ? (widget.enabled
             ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withOpacity(0))
+            : theme.colorScheme.onSurface.withValues(alpha: 0))
         : (widget.enabled
-            ? theme.colorScheme.onSurface.withOpacity(0.5)
-            : theme.colorScheme.onSurface.withOpacity(0.3));
+            ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+            : theme.colorScheme.onSurface.withValues(alpha: 0.3));
     final child = Container(
       alignment: AlignmentDirectional.centerEnd,
       padding: EdgeInsetsDirectional.only(end: widget.size / 2),

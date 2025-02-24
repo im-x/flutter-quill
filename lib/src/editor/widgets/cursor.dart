@@ -232,7 +232,7 @@ class CursorCont extends ChangeNotifier {
   }
 
   void _onColorTick() {
-    color.value = _style.color.withOpacity(_blinkOpacityController.value);
+    color.value = _style.color.withValues(alpha: _blinkOpacityController.value);
     blink.value = show.value && _blinkOpacityController.value > 0;
   }
 }
@@ -291,7 +291,7 @@ class CursorPainter {
 
     final caretHeight = editable!.getFullHeightForCaret(position);
     if (caretHeight != null) {
-      if (isAppleOS(supportWeb: false)) {
+      if (isAppleOSApp) {
         // Center the caret vertically along the text.
         caretRect = Rect.fromLTWH(
           caretRect.left,

@@ -1,16 +1,13 @@
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:meta/meta.dart' show experimental;
+
 import 'clipboard_service.dart';
 import 'default_clipboard_service.dart';
 
-@immutable
-class ClipboardServiceProvider {
-  const ClipboardServiceProvider._();
+@experimental
+abstract final class ClipboardServiceProvider {
   static ClipboardService _instance = DefaultClipboardService();
 
   static ClipboardService get instance => _instance;
-
-  @Deprecated('instacne is a typo, use instance instead.')
-  static ClipboardService get instacne => instance;
 
   static void setInstance(ClipboardService service) {
     _instance = service;

@@ -1,8 +1,12 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'quill_localizations.dart';
+
+// ignore_for_file: type=lint
 
 /// The translations for Indonesian (`id`).
 class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
-  FlutterQuillLocalizationsId([super.locale = 'id']);
+  FlutterQuillLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
   String get pasteLink => 'Tempel tautan';
@@ -128,7 +132,7 @@ class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
   String get alignRight => 'Rata Kanan';
 
   @override
-  String get alignJustify => 'Align justify';
+  String get alignJustify => 'Rata kanan kiri';
 
   @override
   String get justifyWinWidth => 'Rata Kanan dan Kiri';
@@ -143,22 +147,22 @@ class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
   String get normal => 'Normal';
 
   @override
-  String get heading1 => 'Heading 1';
+  String get heading1 => 'Judul 1';
 
   @override
-  String get heading2 => 'Heading 2';
+  String get heading2 => 'Judul 2';
 
   @override
-  String get heading3 => 'Heading 3';
+  String get heading3 => 'Judul 3';
 
   @override
-  String get heading4 => 'Heading 4';
+  String get heading4 => 'Judul 4';
 
   @override
-  String get heading5 => 'Heading 5';
+  String get heading5 => 'Judul 5';
 
   @override
-  String get heading6 => 'Heading 6';
+  String get heading6 => 'Judul 6';
 
   @override
   String get numberedList => 'Daftar Bernomor';
@@ -229,7 +233,7 @@ class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
 
   @override
   String theImageHasBeenSavedAt(String imagePath) {
-    return 'The image has been saved at: $imagePath';
+    return 'Gambar telah disimpan di: $imagePath';
   }
 
   @override
@@ -237,11 +241,11 @@ class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
 
   @override
   String get pleaseEnterTextForYourLink =>
-      "Harap masukkan teks untuk tautan Anda (contoh: 'Pelajari lebih lanjut')";
+      'Harap masukkan teks untuk tautan Anda (contoh: \'Pelajari lebih lanjut\')';
 
   @override
   String get pleaseEnterTheLinkURL =>
-      "Harap masukkan URL tautan (contoh: 'https://example.com')";
+      'Harap masukkan URL tautan (contoh: \'https://example.com\')';
 
   @override
   String get pleaseEnterAValidImageURL =>
@@ -261,44 +265,74 @@ class FlutterQuillLocalizationsId extends FlutterQuillLocalizations {
       'Sensitivitas huruf besar dan kecil dan pencarian kata utuh';
 
   @override
-  String get caseSensitive => 'Case sensitive';
+  String get caseSensitive => 'Sensitif huruf besar-kecil';
 
   @override
-  String get wholeWord => 'Whole word';
+  String get wholeWord => 'Kata penuh';
 
   @override
   String get insertImage => 'Sisipkan Gambar';
 
   @override
-  String get pickAPhotoFromYourGallery => 'Pick a photo from your gallery';
+  String get pickAPhotoFromYourGallery => 'Pilih foto dari galeri Anda';
 
   @override
-  String get takeAPhotoUsingYourCamera => 'Take a photo using your camera';
+  String get takeAPhotoUsingYourCamera => 'Ambil foto menggunakan kamera Anda';
 
   @override
-  String get pasteAPhotoUsingALink => 'Paste a photo using a link';
+  String get pasteAPhotoUsingALink => 'Tempel foto menggunakan tautan';
 
   @override
-  String get pickAVideoFromYourGallery => 'Pick a video from your gallery';
+  String get pickAVideoFromYourGallery => 'Pilih video dari galeri Anda';
 
   @override
-  String get recordAVideoUsingYourCamera => 'Record a video using your camera';
+  String get recordAVideoUsingYourCamera =>
+      'Rekam video menggunakan kamera Anda';
 
   @override
-  String get pasteAVideoUsingALink => 'Paste a video using a link';
+  String get pasteAVideoUsingALink => 'Tempel video menggunakan tautan';
 
   @override
-  String get close => 'Close';
+  String get close => 'Tutup';
 
   @override
-  String get searchSettings => 'Search settings';
+  String get searchSettings => 'Pengaturan pencarian';
 
   @override
-  String get cut => 'Cut';
+  String get cut => 'Potong';
 
   @override
-  String get paste => 'Paste';
+  String get paste => 'Tempel';
 
   @override
-  String get insertTable => 'Insert table';
+  String get insertTable => 'Sisipkan tabel';
+
+  @override
+  String get insertVideo => 'Insert video';
+
+  @override
+  String get errorUnexpectedSavingImage =>
+      'An unexpected error occurred while saving the image. Please try again.';
+
+  @override
+  String get successImageSavedGallery => 'Image saved to your gallery.';
+
+  @override
+  String get successImageSaved => 'Image saved successfully.';
+
+  @override
+  String get successImageDownloaded => 'Image downloaded successfully.';
+
+  @override
+  String get openGallery => 'Open Gallery';
+
+  @override
+  String get openFileLocation => 'Open File Location';
+
+  @override
+  String get openFile => 'Open File';
+
+  @override
+  String get saveImagePermissionDenied =>
+      'Couldn’t save the image due to missing permission';
 }

@@ -1,8 +1,12 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'quill_localizations.dart';
+
+// ignore_for_file: type=lint
 
 /// The translations for Swedish (`sv`).
 class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
-  FlutterQuillLocalizationsSv([super.locale = 'sv']);
+  FlutterQuillLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
   String get pasteLink => 'Klistra in länk';
@@ -128,7 +132,7 @@ class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
   String get alignRight => 'Högerjustera';
 
   @override
-  String get alignJustify => 'Align justify';
+  String get alignJustify => 'Justera text';
 
   @override
   String get justifyWinWidth => 'Justera till fönsterbredd';
@@ -228,7 +232,7 @@ class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
 
   @override
   String theImageHasBeenSavedAt(String imagePath) {
-    return 'The image has been saved at: $imagePath';
+    return 'Bilden har sparats på: $imagePath';
   }
 
   @override
@@ -236,11 +240,11 @@ class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
 
   @override
   String get pleaseEnterTextForYourLink =>
-      "Ange text för din länk (t.ex. 'Lär dig mer')";
+      'Ange text för din länk (t.ex. \'Lär dig mer\')';
 
   @override
   String get pleaseEnterTheLinkURL =>
-      "Ange URL för länken (t.ex. 'https://example.com')";
+      'Ange URL för länken (t.ex. \'https://example.com\')';
 
   @override
   String get pleaseEnterAValidImageURL => 'Ange en giltig bild-URL';
@@ -259,10 +263,10 @@ class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
       'Skiftlägeskänsligt och helordsökning';
 
   @override
-  String get caseSensitive => 'Case sensitive';
+  String get caseSensitive => 'Skilja mellan versaler och gemener';
 
   @override
-  String get wholeWord => 'Whole word';
+  String get wholeWord => 'Hela ord';
 
   @override
   String get insertImage => 'Infoga bild';
@@ -286,17 +290,46 @@ class FlutterQuillLocalizationsSv extends FlutterQuillLocalizations {
   String get pasteAVideoUsingALink => 'Klistra in en video med en länk';
 
   @override
-  String get close => 'Close';
+  String get close => 'Stäng';
 
   @override
-  String get searchSettings => 'Search settings';
+  String get searchSettings => 'Sökinställningar';
 
   @override
-  String get cut => 'Cut';
+  String get cut => 'Klipp ut';
 
   @override
-  String get paste => 'Paste';
+  String get paste => 'Klistra in';
 
   @override
-  String get insertTable => 'Insert table';
+  String get insertTable => 'Infoga tabell';
+
+  @override
+  String get insertVideo => 'Insert video';
+
+  @override
+  String get errorUnexpectedSavingImage =>
+      'An unexpected error occurred while saving the image. Please try again.';
+
+  @override
+  String get successImageSavedGallery => 'Image saved to your gallery.';
+
+  @override
+  String get successImageSaved => 'Image saved successfully.';
+
+  @override
+  String get successImageDownloaded => 'Image downloaded successfully.';
+
+  @override
+  String get openGallery => 'Open Gallery';
+
+  @override
+  String get openFileLocation => 'Open File Location';
+
+  @override
+  String get openFile => 'Open File';
+
+  @override
+  String get saveImagePermissionDenied =>
+      'Couldn’t save the image due to missing permission';
 }

@@ -8,21 +8,28 @@ import 'package:intl/intl.dart' as intl;
 import 'quill_localizations_ar.dart';
 import 'quill_localizations_bg.dart';
 import 'quill_localizations_bn.dart';
+import 'quill_localizations_bs.dart';
 import 'quill_localizations_ca.dart';
 import 'quill_localizations_cs.dart';
 import 'quill_localizations_da.dart';
 import 'quill_localizations_de.dart';
+import 'quill_localizations_el.dart';
 import 'quill_localizations_en.dart';
 import 'quill_localizations_es.dart';
 import 'quill_localizations_fa.dart';
 import 'quill_localizations_fr.dart';
+import 'quill_localizations_gu.dart';
 import 'quill_localizations_he.dart';
 import 'quill_localizations_hi.dart';
+import 'quill_localizations_hr.dart';
+import 'quill_localizations_hu.dart';
 import 'quill_localizations_id.dart';
 import 'quill_localizations_it.dart';
 import 'quill_localizations_ja.dart';
+import 'quill_localizations_km.dart';
 import 'quill_localizations_ko.dart';
 import 'quill_localizations_ku.dart';
+import 'quill_localizations_mk.dart';
 import 'quill_localizations_ms.dart';
 import 'quill_localizations_ne.dart';
 import 'quill_localizations_nl.dart';
@@ -35,12 +42,15 @@ import 'quill_localizations_sk.dart';
 import 'quill_localizations_sr.dart';
 import 'quill_localizations_sv.dart';
 import 'quill_localizations_sw.dart';
+import 'quill_localizations_th.dart';
 import 'quill_localizations_tk.dart';
 import 'quill_localizations_tr.dart';
 import 'quill_localizations_uk.dart';
 import 'quill_localizations_ur.dart';
 import 'quill_localizations_vi.dart';
 import 'quill_localizations_zh.dart';
+
+// ignore_for_file: type=lint
 
 /// Callers can lookup localized strings with an instance of FlutterQuillLocalizations
 /// returned by `FlutterQuillLocalizations.of(context)`.
@@ -130,23 +140,30 @@ abstract class FlutterQuillLocalizations {
     Locale('ar'),
     Locale('bg'),
     Locale('bn'),
+    Locale('bs'),
     Locale('ca'),
     Locale('cs'),
     Locale('da'),
     Locale('de'),
+    Locale('el'),
     Locale('en'),
     Locale('en', 'US'),
     Locale('es'),
     Locale('fa'),
     Locale('fr'),
+    Locale('gu'),
     Locale('he'),
     Locale('hi'),
+    Locale('hr'),
+    Locale('hu'),
     Locale('id'),
     Locale('it'),
     Locale('ja'),
+    Locale('km'),
     Locale('ko'),
     Locale('ku'),
     Locale('ku', 'CKB'),
+    Locale('mk'),
     Locale('ms'),
     Locale('ne'),
     Locale('nl'),
@@ -161,6 +178,7 @@ abstract class FlutterQuillLocalizations {
     Locale('sr'),
     Locale('sv'),
     Locale('sw'),
+    Locale('th'),
     Locale('tk'),
     Locale('tr'),
     Locale('uk'),
@@ -752,6 +770,60 @@ abstract class FlutterQuillLocalizations {
   /// In en, this message translates to:
   /// **'Insert table'**
   String get insertTable;
+
+  /// No description provided for @insertVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert video'**
+  String get insertVideo;
+
+  /// A generic error message shown when an image cannot be saved due to an unknown issue
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred while saving the image. Please try again.'**
+  String get errorUnexpectedSavingImage;
+
+  /// Message shown when an image is successfully saved to the system gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved to your gallery.'**
+  String get successImageSavedGallery;
+
+  /// Message shown on desktop when an image is successfully saved. The user is prompted to open the file location
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved successfully.'**
+  String get successImageSaved;
+
+  /// Message shown on web when an image is successfully downloaded
+  ///
+  /// In en, this message translates to:
+  /// **'Image downloaded successfully.'**
+  String get successImageDownloaded;
+
+  /// Label for the button that opens the system gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Open Gallery'**
+  String get openGallery;
+
+  /// Label for the button that opens the file explorer to the file's location
+  ///
+  /// In en, this message translates to:
+  /// **'Open File Location'**
+  String get openFileLocation;
+
+  /// Label for the button that opens the file
+  ///
+  /// In en, this message translates to:
+  /// **'Open File'**
+  String get openFile;
+
+  /// Message shown when the app is unable to save an image because a required permission was denied or skipped
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save the image due to missing permission'**
+  String get saveImagePermissionDenied;
 }
 
 class _FlutterQuillLocalizationsDelegate
@@ -769,21 +841,28 @@ class _FlutterQuillLocalizationsDelegate
         'ar',
         'bg',
         'bn',
+        'bs',
         'ca',
         'cs',
         'da',
         'de',
+        'el',
         'en',
         'es',
         'fa',
         'fr',
+        'gu',
         'he',
         'hi',
+        'hr',
+        'hu',
         'id',
         'it',
         'ja',
+        'km',
         'ko',
         'ku',
+        'mk',
         'ms',
         'ne',
         'nl',
@@ -796,6 +875,7 @@ class _FlutterQuillLocalizationsDelegate
         'sr',
         'sv',
         'sw',
+        'th',
         'tk',
         'tr',
         'uk',
@@ -863,6 +943,8 @@ FlutterQuillLocalizations lookupFlutterQuillLocalizations(Locale locale) {
       return FlutterQuillLocalizationsBg();
     case 'bn':
       return FlutterQuillLocalizationsBn();
+    case 'bs':
+      return FlutterQuillLocalizationsBs();
     case 'ca':
       return FlutterQuillLocalizationsCa();
     case 'cs':
@@ -871,6 +953,8 @@ FlutterQuillLocalizations lookupFlutterQuillLocalizations(Locale locale) {
       return FlutterQuillLocalizationsDa();
     case 'de':
       return FlutterQuillLocalizationsDe();
+    case 'el':
+      return FlutterQuillLocalizationsEl();
     case 'en':
       return FlutterQuillLocalizationsEn();
     case 'es':
@@ -879,20 +963,30 @@ FlutterQuillLocalizations lookupFlutterQuillLocalizations(Locale locale) {
       return FlutterQuillLocalizationsFa();
     case 'fr':
       return FlutterQuillLocalizationsFr();
+    case 'gu':
+      return FlutterQuillLocalizationsGu();
     case 'he':
       return FlutterQuillLocalizationsHe();
     case 'hi':
       return FlutterQuillLocalizationsHi();
+    case 'hr':
+      return FlutterQuillLocalizationsHr();
+    case 'hu':
+      return FlutterQuillLocalizationsHu();
     case 'id':
       return FlutterQuillLocalizationsId();
     case 'it':
       return FlutterQuillLocalizationsIt();
     case 'ja':
       return FlutterQuillLocalizationsJa();
+    case 'km':
+      return FlutterQuillLocalizationsKm();
     case 'ko':
       return FlutterQuillLocalizationsKo();
     case 'ku':
       return FlutterQuillLocalizationsKu();
+    case 'mk':
+      return FlutterQuillLocalizationsMk();
     case 'ms':
       return FlutterQuillLocalizationsMs();
     case 'ne':
@@ -917,6 +1011,8 @@ FlutterQuillLocalizations lookupFlutterQuillLocalizations(Locale locale) {
       return FlutterQuillLocalizationsSv();
     case 'sw':
       return FlutterQuillLocalizationsSw();
+    case 'th':
+      return FlutterQuillLocalizationsTh();
     case 'tk':
       return FlutterQuillLocalizationsTk();
     case 'tr':

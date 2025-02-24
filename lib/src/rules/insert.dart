@@ -343,7 +343,6 @@ class AutoFormatMultipleLinksRule extends InsertRule {
   /// This pattern is used to match a links within a text segment.
   ///
   /// It works for the following testing URLs:
-  // www.google.com
   // http://google.com
   // https://www.google.com
   // http://beginner.example.edu/#act

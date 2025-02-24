@@ -2,25 +2,25 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart' show ClipboardData, Clipboard;
 import 'package:flutter/widgets.dart';
-import 'package:html/parser.dart' as html_parser;
-import 'package:meta/meta.dart' show experimental;
+import 'package:meta/meta.dart';
 
 import '../../quill_delta.dart';
 import '../common/structs/image_url.dart';
 import '../common/structs/offset_value.dart';
 import '../common/utils/embeds.dart';
 import '../delta/delta_diff.dart';
-import '../delta/delta_x.dart';
 import '../document/attribute.dart';
 import '../document/document.dart';
 import '../document/nodes/embeddable.dart';
 import '../document/nodes/leaf.dart';
 import '../document/structs/doc_change.dart';
 import '../document/style.dart';
-import '../editor/config/editor_configurations.dart';
+import '../editor/config/editor_config.dart';
+import '../editor/raw_editor/raw_editor_state.dart';
 import '../editor_toolbar_controller_shared/clipboard/clipboard_service_provider.dart';
-import '../toolbar/config/simple_toolbar_configurations.dart';
-import 'quill_controller_configurations.dart';
+import 'clipboard/quill_controller_paste.dart';
+import 'clipboard/quill_controller_rich_paste.dart';
+import 'quill_controller_config.dart';
 
 typedef ReplaceTextCallback = bool Function(int index, int len, Object? data);
 typedef DeleteCallback = void Function(int cursorPosition, bool forward);
@@ -29,47 +29,26 @@ class QuillController extends ChangeNotifier {
   QuillController({
     required Document document,
     required TextSelection selection,
-    this.configurations = const QuillControllerConfigurations(),
+    this.config = const QuillControllerConfig(),
     this.keepStyleOnNewLine = true,
     this.onReplaceText,
     this.onDelete,
     this.onSelectionCompleted,
     this.onSelectionChanged,
     this.readOnly = false,
-    this.editorFocusNode,
   })  : _document = document,
         _selection = selection;
 
-  factory QuillController.basic(
-          {QuillControllerConfigurations configurations =
-              const QuillControllerConfigurations(),
-          FocusNode? editorFocusNode}) =>
+  factory QuillController.basic({
+    QuillControllerConfig config = const QuillControllerConfig(),
+  }) =>
       QuillController(
-        configurations: configurations,
-        editorFocusNode: editorFocusNode,
+        config: config,
         document: Document(),
         selection: const TextSelection.collapsed(offset: 0),
       );
 
-  final QuillControllerConfigurations configurations;
-
-  /// Editor configurations
-  ///
-  /// Caches configuration set in QuillEditor ctor.
-  QuillEditorConfigurations? _editorConfigurations;
-  QuillEditorConfigurations get editorConfigurations =>
-      _editorConfigurations ?? const QuillEditorConfigurations();
-  set editorConfigurations(QuillEditorConfigurations? value) =>
-      _editorConfigurations = document.editorConfigurations = value;
-
-  /// Toolbar configurations
-  ///
-  /// Caches configuration set in QuillSimpleToolbar ctor.
-  QuillSimpleToolbarConfigurations? _toolbarConfigurations;
-  QuillSimpleToolbarConfigurations get toolbarConfigurations =>
-      _toolbarConfigurations ?? const QuillSimpleToolbarConfigurations();
-  set toolbarConfigurations(QuillSimpleToolbarConfigurations? value) =>
-      _toolbarConfigurations = value;
+  final QuillControllerConfig config;
 
   /// Document managed by this controller.
   Document _document;
@@ -98,28 +77,36 @@ class QuillController extends ChangeNotifier {
     }
   }
 
+  // Store editor config to pass them to the document to
+  // support search within embed objects https://github.com/singerdmx/flutter-quill/pull/2090.
+  // For internal use only, should not be exposed as a public API.
+  QuillEditorConfig? _editorConfig;
+
+  @visibleForTesting
+  @internal
+  QuillEditorConfig? get editorConfig => _editorConfig;
+  @internal
+  set editorConfig(QuillEditorConfig? value) {
+    _editorConfig = value;
+    _setDocumentSearchProperties();
+  }
+
+  // Pass required editor config to the document
+  // to support search within embed objects https://github.com/singerdmx/flutter-quill/pull/2090
+  void _setDocumentSearchProperties() {
+    _document
+      ..searchConfig = _editorConfig?.searchConfig
+      ..embedBuilders = _editorConfig?.embedBuilders
+      ..unknownEmbedBuilder = _editorConfig?.unknownEmbedBuilder;
+  }
+
   set document(Document doc) {
     _document = doc;
-    _document.editorConfigurations = editorConfigurations;
+    _setDocumentSearchProperties();
 
     // Prevent the selection from
     _selection = const TextSelection(baseOffset: 0, extentOffset: 0);
 
-    notifyListeners();
-  }
-
-  @experimental
-  void setContents(
-    Delta delta, {
-    ChangeSource changeSource = ChangeSource.local,
-  }) {
-    final newDocument = Document.fromDelta(delta);
-
-    final change = DocChange(_document.toDelta(), delta, changeSource);
-    newDocument.documentChangeObserver.add(change);
-    newDocument.history.handleDocChange(change);
-
-    _document = newDocument;
     notifyListeners();
   }
 
@@ -154,8 +141,9 @@ class QuillController extends ChangeNotifier {
 
   bool ignoreFocusOnTextChange = false;
 
-  /// Skip requestKeyboard being called in
-  /// RawEditorState#_didChangeTextEditingValue
+  /// Skip the keyboard request in [QuillRawEditorState.requestKeyboard].
+  ///
+  /// See also: [QuillRawEditorState._didChangeTextEditingValue]
   bool skipRequestKeyboard = false;
 
   /// True when this [QuillController] instance has been disposed.
@@ -311,7 +299,7 @@ class QuillController extends ChangeNotifier {
     Object? data,
     TextSelection? textSelection, {
     bool ignoreFocus = false,
-    bool shouldNotifyListeners = true,
+    @experimental bool shouldNotifyListeners = true,
   }) {
     assert(data is String || data is Embeddable || data is Delta);
 
@@ -320,19 +308,25 @@ class QuillController extends ChangeNotifier {
     }
 
     Delta? delta;
+    Style? style;
     if (len > 0 || data is! String || data.isNotEmpty) {
       delta = document.replace(index, len, data);
-      var shouldRetainDelta = toggledStyle.isNotEmpty &&
+
+      /// Remove block styles as they can only be attached to line endings
+      style = Style.attr(Map<String, Attribute>.fromEntries(toggledStyle
+          .attributes.entries
+          .where((a) => a.value.scope != AttributeScope.block)));
+      var shouldRetainDelta = style.isNotEmpty &&
           delta.isNotEmpty &&
           delta.length <= 2 &&
           delta.last.isInsert;
       if (shouldRetainDelta &&
-          toggledStyle.isNotEmpty &&
+          style.isNotEmpty &&
           delta.length == 2 &&
           delta.last.data == '\n') {
         // if all attributes are inline, shouldRetainDelta should be false
         final anyAttributeNotInline =
-            toggledStyle.values.any((attr) => !attr.isInline);
+            style.values.any((attr) => !attr.isInline);
         if (!anyAttributeNotInline) {
           shouldRetainDelta = false;
         }
@@ -340,7 +334,7 @@ class QuillController extends ChangeNotifier {
       if (shouldRetainDelta) {
         final retainDelta = Delta()
           ..retain(index)
-          ..retain(data is String ? data.length : 1, toggledStyle.toJson());
+          ..retain(data is String ? data.length : 1, style.toJson());
         document.compose(retainDelta, ChangeSource.local);
       }
     }
@@ -390,11 +384,9 @@ class QuillController extends ChangeNotifier {
     int index,
     int len,
     Attribute? attribute, {
-    bool shouldNotifyListeners = true,
+    @experimental bool shouldNotifyListeners = true,
   }) {
-    if (len == 0 &&
-        attribute!.isInline &&
-        attribute.key != Attribute.link.key) {
+    if (len == 0 && attribute!.key != Attribute.link.key) {
       // Add the attribute to our toggledStyle.
       // It will be used later upon insertion.
       toggledStyle = toggledStyle.put(attribute);
@@ -416,7 +408,7 @@ class QuillController extends ChangeNotifier {
   }
 
   void formatSelection(Attribute? attribute,
-      {bool shouldNotifyListeners = true}) {
+      {@experimental bool shouldNotifyListeners = true}) {
     formatText(
       selection.start,
       selection.end - selection.start,
@@ -544,10 +536,13 @@ class QuillController extends ChangeNotifier {
   Delta get pasteDelta => _pasteDelta;
   List<OffsetValue> get pasteStyleAndEmbed => _pasteStyleAndEmbed;
 
+  /// Whether the text can be changed.
+  ///
+  /// When this is set to `true`, the text cannot be modified
+  /// by any shortcut or keyboard operation. The text is still selectable.
+  ///
+  /// Defaults to `false`.
   bool readOnly;
-
-  /// Used to give focus to the editor following a toolbar action
-  FocusNode? editorFocusNode;
 
   ImageUrl? _copiedImageUrl;
   ImageUrl? get copiedImageUrl => _copiedImageUrl;
@@ -591,12 +586,16 @@ class QuillController extends ChangeNotifier {
     ignoreFocusOnTextChange = true;
   }
 
+  @experimental
   bool clipboardSelection(bool copy) {
     copiedImageUrl = null;
 
     /// Get the text for the selected region and expand the content of Embedded objects.
     _pastePlainText = document.getPlainText(
-        selection.start, selection.end - selection.start, true);
+      selection.start,
+      selection.end - selection.start,
+      includeEmbeds: true,
+    );
 
     /// Get the internal representation so it can be pasted into a QuillEditor with style retained.
     _pasteStyleAndEmbed = getAllIndividualSelectionStylesAndEmbed();
@@ -618,77 +617,105 @@ class QuillController extends ChangeNotifier {
   }
 
   /// Returns whether paste operation was handled here.
-  /// updateEditor is called if paste operation was successful.
+  /// [updateEditor] is called if paste operation was successful.
+  @experimental
   Future<bool> clipboardPaste({void Function()? updateEditor}) async {
     if (readOnly || !selection.isValid) return true;
 
-    final pasteUsingInternalImageSuccess = await _pasteInternalImage();
-    if (pasteUsingInternalImageSuccess) {
+    final clipboardConfig = config.clipboardConfig;
+
+    if (await clipboardConfig?.onClipboardPaste?.call() == true) {
       updateEditor?.call();
       return true;
     }
 
-    final pasteUsingHtmlSuccess = await _pasteHTML();
-    if (pasteUsingHtmlSuccess) {
+    final pasteInternalImageSuccess = await _pasteInternalImage();
+    if (pasteInternalImageSuccess) {
       updateEditor?.call();
       return true;
     }
 
-    final pasteUsingMarkdownSuccess = await _pasteMarkdown();
-    if (pasteUsingMarkdownSuccess) {
-      updateEditor?.call();
-      return true;
+    const enableExternalRichPasteDefault = true;
+    if (clipboardConfig?.enableExternalRichPaste ??
+        enableExternalRichPasteDefault) {
+      final pasteHtmlSuccess = await pasteHTML();
+      if (pasteHtmlSuccess) {
+        updateEditor?.call();
+        return true;
+      }
+
+      final pasteMarkdownSuccess = await pasteMarkdown();
+      if (pasteMarkdownSuccess) {
+        updateEditor?.call();
+        return true;
+      }
     }
 
+    final clipboardService = ClipboardServiceProvider.instance;
+
+    final onImagePaste = clipboardConfig?.onImagePaste;
+    if (onImagePaste != null) {
+      final imageBytes = await clipboardService.getImageFile();
+
+      if (imageBytes != null) {
+        final imageUrl = await onImagePaste(imageBytes);
+        if (imageUrl != null) {
+          replaceText(
+            plainTextEditingValue.selection.end,
+            0,
+            BlockEmbed.image(imageUrl),
+            null,
+          );
+          updateEditor?.call();
+          return true;
+        }
+      }
+    }
+
+    final onGifPaste = clipboardConfig?.onGifPaste;
+    if (onGifPaste != null) {
+      final gifBytes = await clipboardService.getGifFile();
+      if (gifBytes != null) {
+        final gifUrl = await onGifPaste(gifBytes);
+        if (gifUrl != null) {
+          replaceText(
+            plainTextEditingValue.selection.end,
+            0,
+            BlockEmbed.image(gifUrl),
+            null,
+          );
+          updateEditor?.call();
+          return true;
+        }
+      }
+    }
+
+    // Only process plain text if no image/gif was pasted.
     // Snapshot the input before using `await`.
     // See https://github.com/flutter/flutter/issues/11427
-    final plainTextClipboardData =
-        await Clipboard.getData(Clipboard.kTextPlain);
-    if (pasteUsingPlainOrDelta(plainTextClipboardData?.text)) {
-      updateEditor?.call();
-      return true;
-    }
+    final plainText = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
 
-    if (await configurations.onClipboardPaste?.call() == true) {
-      updateEditor?.call();
-      return true;
-    }
-
-    return false;
-  }
-
-  /// Internal method to allow unit testing
-  bool pasteUsingPlainOrDelta(String? clipboardText) {
-    if (clipboardText != null) {
-      /// Internal copy-paste preserves styles and embeds
-      if (clipboardText == _pastePlainText &&
-          _pastePlainText.isNotEmpty &&
-          _pasteDelta.isNotEmpty) {
-        replaceText(selection.start, selection.end - selection.start,
-            _pasteDelta, TextSelection.collapsed(offset: selection.end));
-      } else {
-        replaceText(
-            selection.start,
-            selection.end - selection.start,
-            clipboardText,
-            TextSelection.collapsed(
-                offset: selection.end + clipboardText.length));
+    if (plainText != null) {
+      final plainTextToPaste = await getTextToPaste(plainText);
+      if (pastePlainTextOrDelta(plainTextToPaste,
+          pastePlainText: _pastePlainText, pasteDelta: _pasteDelta)) {
+        updateEditor?.call();
+        return true;
       }
-      return true;
     }
+
+    final onUnprocessedPaste = clipboardConfig?.onUnprocessedPaste;
+    if (onUnprocessedPaste != null) {
+      if (await onUnprocessedPaste()) {
+        updateEditor?.call();
+        return true;
+      }
+    }
+
     return false;
   }
 
-  void _pasteUsingDelta(Delta deltaFromClipboard) {
-    replaceText(
-      selection.start,
-      selection.end - selection.start,
-      deltaFromClipboard,
-      TextSelection.collapsed(offset: selection.end),
-    );
-  }
-
-  /// Return true if can paste internal image
+  /// Return `true` if can paste an internal image
   Future<bool> _pasteInternalImage() async {
     final copiedImageUrl = _copiedImageUrl;
     if (copiedImageUrl != null) {
@@ -716,66 +743,13 @@ class QuillController extends ChangeNotifier {
     return false;
   }
 
-  /// Return true if can paste using HTML
-  Future<bool> _pasteHTML() async {
-    final clipboardService = ClipboardServiceProvider.instance;
-
-    Future<String?> getHTML() async {
-      if (await clipboardService.canProvideHtmlTextFromFile()) {
-        return await clipboardService.getHtmlTextFromFile();
-      }
-      if (await clipboardService.canProvideHtmlText()) {
-        return await clipboardService.getHtmlText();
-      }
-      return null;
-    }
-
-    final htmlText = await getHTML();
-    if (htmlText != null) {
-      final htmlBody = html_parser.parse(htmlText).body?.outerHtml;
-      // ignore: deprecated_member_use_from_same_package
-      final deltaFromClipboard = DeltaX.fromHtml(htmlBody ?? htmlText);
-
-      _pasteUsingDelta(deltaFromClipboard);
-
-      return true;
-    }
-    return false;
-  }
-
-  /// Return true if can paste using Markdown
-  Future<bool> _pasteMarkdown() async {
-    final clipboardService = ClipboardServiceProvider.instance;
-
-    Future<String?> getMarkdown() async {
-      if (await clipboardService.canProvideMarkdownTextFromFile()) {
-        return await clipboardService.getMarkdownTextFromFile();
-      }
-      if (await clipboardService.canProvideMarkdownText()) {
-        return await clipboardService.getMarkdownText();
-      }
-      return null;
-    }
-
-    final markdownText = await getMarkdown();
-    if (markdownText != null) {
-      // ignore: deprecated_member_use_from_same_package
-      final deltaFromClipboard = DeltaX.fromMarkdown(markdownText);
-
-      _pasteUsingDelta(deltaFromClipboard);
-
-      return true;
-    }
-    return false;
-  }
-
   void replaceTextWithEmbeds(
     int index,
     int len,
     String insertedText,
     TextSelection? textSelection, {
     bool ignoreFocus = false,
-    bool shouldNotifyListeners = true,
+    @experimental bool shouldNotifyListeners = true,
   }) {
     final containsEmbed =
         insertedText.codeUnits.contains(Embed.kObjectReplacementInt);
