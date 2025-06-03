@@ -655,9 +655,14 @@ class _TextSelectionHandleOverlayState
 
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!widget.renderObject.attached) return;
+
+    // 更新拖拽位置，提供更平滑的拖拽体验
     _dragPosition += details.delta;
+
+    // 使用全局位置而不是本地偏移计算，提高精确度
     final position =
         widget.renderObject.getPositionForOffset(details.globalPosition);
+
     if (widget.selection.isCollapsed) {
       widget.onSelectionHandleChanged(TextSelection.fromPosition(position));
       return;
@@ -684,8 +689,20 @@ class _TextSelectionHandleOverlayState
         throw ArgumentError('Invalid widget.position');
     }
 
-    // 防止在拖拽过程中创建collapsed selection，这会导致handles消失
+    // 防止在拖拽过程中创建collapsed selection，但允许短暂的重叠
+    // 这样可以避免手柄在交叉时突然消失
     if (newSelection.isCollapsed) {
+      // 如果选择变为collapsed，我们仍然允许更新，
+      // 但会在下一帧中调整为合理的选择
+      final minimalSelection = TextSelection(
+        baseOffset: newSelection.baseOffset,
+        extentOffset: newSelection.baseOffset + 1,
+      );
+      // 确保不超出文档范围
+      final documentLength = widget.renderObject.document.length;
+      if (minimalSelection.extentOffset <= documentLength) {
+        widget.onSelectionHandleChanged(minimalSelection);
+      }
       return;
     }
 
@@ -764,11 +781,20 @@ class _TextSelectionHandleOverlayState
       handleSize.height,
     );
 
-    // Make sure the GestureDetector is big enough to be easily interactive.
+    // 大幅增大手柄的交互区域，提高响应性
+    // 将最小触摸半径从 kMinInteractiveDimension / 2 增加到 30.0
+    // 同时确保交互区域至少是原始手柄大小的 2.5 倍
+    const enhancedTouchRadius = 30.0;
+    final minEnhancedSize = math.max(handleSize.width, handleSize.height) * 2.5;
+    final effectiveRadius = math.max(enhancedTouchRadius, minEnhancedSize / 2);
+
     final interactiveRect = handleRect.expandToInclude(
       Rect.fromCircle(
-          center: handleRect.center, radius: kMinInteractiveDimension / 2),
+        center: handleRect.center,
+        radius: effectiveRadius,
+      ),
     );
+
     final padding = RelativeRect.fromLTRB(
       math.max((interactiveRect.width - handleRect.width) / 2, 0),
       math.max((interactiveRect.height - handleRect.height) / 2, 0),
@@ -787,8 +813,10 @@ class _TextSelectionHandleOverlayState
           width: interactiveRect.width,
           height: interactiveRect.height,
           child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            dragStartBehavior: widget.dragStartBehavior,
+            // 使用 opaque 行为确保手势能被可靠捕获
+            behavior: HitTestBehavior.opaque,
+            // 设置为 down 以提高响应速度
+            dragStartBehavior: DragStartBehavior.down,
             onPanStart: _handleDragStart,
             onPanUpdate: _handleDragUpdate,
             onPanEnd: _handleDragEnd,
