@@ -517,11 +517,16 @@ class EditorTextSelectionOverlay {
       renderEditable.getLocalRectForCaret(positionAtEndOfLine).bottomCenter,
     );
 
+    // 向上调整放大镜位置，减少8像素的垂直偏移
+    const magnifierVerticalOffset = Offset(0, -8);
+
     return MagnifierInfo(
       fieldBounds: globalRenderEditableTopLeft & renderEditable.size,
       globalGesturePosition: globalGesturePosition,
-      caretRect: localCaretRect.shift(globalRenderEditableTopLeft),
-      currentLineBoundaries: lineBoundaries.shift(globalRenderEditableTopLeft),
+      caretRect: localCaretRect
+          .shift(globalRenderEditableTopLeft + magnifierVerticalOffset),
+      currentLineBoundaries: lineBoundaries
+          .shift(globalRenderEditableTopLeft + magnifierVerticalOffset),
     );
   }
 }
