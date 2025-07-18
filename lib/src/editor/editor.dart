@@ -635,9 +635,20 @@ class _QuillEditorSelectionGestureDetectorBuilder
         platform: platform,
         supportWeb: true,
       )) {
-        _handleLongPressSelection(details.globalPosition);
+        if (renderEditor!.readOnly == true) {
+          _handleLongPressSelection(details.globalPosition);
+        } else {
+          renderEditor!.selectPositionAt(
+            from: details.globalPosition,
+            cause: SelectionChangedCause.longPress,
+          );
+        }
       } else {
-        _handleLongPressSelection(details.globalPosition);
+        if (renderEditor!.readOnly == true) {
+          _handleLongPressSelection(details.globalPosition);
+        } else {
+          renderEditor!.selectWord(SelectionChangedCause.longPress);
+        }
         Feedback.forLongPress(_state.context);
       }
     }

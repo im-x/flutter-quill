@@ -536,7 +536,7 @@ class EditorTextSelectionGestureDetectorBuilder {
                 .trim()
                 .isNotEmpty;
 
-        if (!hasValidSelection) {
+        if (!hasValidSelection && renderEditor?.readOnly == true) {
           // If no valid text was selected, try to find and select a nearby word
           _selectNearbyWord(details.globalPosition);
         }
