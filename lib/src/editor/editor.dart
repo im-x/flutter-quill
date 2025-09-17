@@ -244,7 +244,14 @@ class QuillEditorState extends State<QuillEditor>
     // Hide toolbar when the editor loses focus.
     focusNode.addListener(() {
       if (!focusNode.hasFocus) {
+        /// 这里如何修改才能，将文字的选中状态一并去除？
         _editorKey.currentState?.hideToolbar();
+
+        // 清除文字选中状态和相关视觉效果
+        final currentState = _editorKey.currentState;
+        if (currentState != null) {
+          _clearSelectionVisuals(currentState.widget.controller);
+        }
       }
     });
   }
@@ -440,6 +447,37 @@ class QuillEditorState extends State<QuillEditor>
       );
     }
     editorCurrentState.requestKeyboard();
+  }
+
+  /// 清除选中状态和相关视觉效果
+  /// 包含选区折叠、ContextMenu 清理和 postFrameCallback 复核
+  void _clearSelectionVisuals(QuillController controller) {
+    final sel = controller.selection;
+
+    // 1) 折叠选区（去掉蓝色块）。选到末端最自然。
+    if (!sel.isCollapsed) {
+      controller.updateSelection(
+        TextSelection.collapsed(offset: sel.extentOffset),
+        ChangeSource.local,
+      );
+    }
+
+    // 2) 关掉系统菜单（剪切/复制/粘贴气泡）
+    try {
+      ContextMenuController.removeAny();
+    } catch (_) {}
+
+    // 3) 少数平台/时机（键盘动画/bringIntoView 后）会在下一帧又画一次，
+    //    加一帧复核，确保彻底清掉。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final s = controller.selection;
+      if (!s.isCollapsed) {
+        controller.updateSelection(
+          TextSelection.collapsed(offset: s.extentOffset),
+          ChangeSource.local,
+        );
+      }
+    });
   }
 }
 
