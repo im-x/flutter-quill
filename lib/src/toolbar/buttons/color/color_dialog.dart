@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart'
-    show ColorPicker, MaterialPicker, colorToHex;
 
 import '../../../../translations.dart';
 import '../../../document/style.dart';
@@ -39,7 +37,7 @@ class ColorPickerDialogState extends State<ColorPickerDialog> {
   @override
   void initState() {
     super.initState();
-    hexController = TextEditingController(text: colorToHex(selectedColor));
+    hexController = TextEditingController(text: '');
     if (widget.isToggledColor) {
       selectedColor = widget.isBackground
           ? hexToColor(widget.selectionStyle.attributes['background']?.value)
@@ -94,24 +92,24 @@ class ColorPickerDialogState extends State<ColorPickerDialog> {
             const SizedBox(height: 6),
             Column(
               children: [
-                if (pickerType == _PickerType.material)
-                  MaterialPicker(
-                    pickerColor: selectedColor,
-                    onColorChanged: (color) {
-                      widget.onRequestChangeColor(context, color);
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                if (pickerType == _PickerType.color)
-                  ColorPicker(
-                    pickerColor: selectedColor,
-                    onColorChanged: (color) {
-                      widget.onRequestChangeColor(context, color);
-                      hexController.text = colorToHex(color);
-                      selectedColor = color;
-                      colorBoxSetState(() {});
-                    },
-                  ),
+                // if (pickerType == _PickerType.material)
+                //   MaterialPicker(
+                //     pickerColor: selectedColor,
+                //     onColorChanged: (color) {
+                //       widget.onRequestChangeColor(context, color);
+                //       Navigator.of(context).pop();
+                //     },
+                //   ),
+                // if (pickerType == _PickerType.color)
+                //   ColorPicker(
+                //     pickerColor: selectedColor,
+                //     onColorChanged: (color) {
+                //       widget.onRequestChangeColor(context, color);
+                //       hexController.text = colorToHex(color);
+                //       selectedColor = color;
+                //       colorBoxSetState(() {});
+                //     },
+                //   ),
                 const SizedBox(
                   height: 10,
                 ),
