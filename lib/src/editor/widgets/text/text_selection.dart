@@ -260,10 +260,13 @@ class EditorTextSelectionOverlay {
     Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
         .insert(toolbar!);
 
-    // make sure handles are visible as well
-    if (_handles == null) {
-      showHandles();
+    // Keep handles above the toolbar. When a previous selection already left
+    // handle entries in the overlay, inserting the toolbar would otherwise
+    // paint the toolbar over the handles.
+    if (_handles != null) {
+      hideHandles();
     }
+    showHandles();
   }
 
   Widget _buildHandle(
@@ -330,8 +333,6 @@ class EditorTextSelectionOverlay {
             ? newSelection.extent
             : const TextPosition(offset: 0);
         break;
-      default:
-        throw ArgumentError('Invalid position');
     }
 
     final currSelection = newSelection != null
@@ -406,19 +407,25 @@ class EditorTextSelectionOverlay {
 
   void _onHandleDragStart(DragStartDetails details, TextPosition position) {
     if (defaultTargetPlatform != TargetPlatform.iOS &&
-        defaultTargetPlatform != TargetPlatform.android) return;
+        defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
     showMagnifier(position, details.globalPosition, renderObject);
   }
 
   void _onHandleDragUpdate(DragUpdateDetails details, TextPosition position) {
     if (defaultTargetPlatform != TargetPlatform.iOS &&
-        defaultTargetPlatform != TargetPlatform.android) return;
+        defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
     updateMagnifier(position, details.globalPosition, renderObject);
   }
 
   void _onHandleDragEnd(DragEndDetails details) {
     if (defaultTargetPlatform != TargetPlatform.iOS &&
-        defaultTargetPlatform != TargetPlatform.android) return;
+        defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
     hideMagnifier();
   }
 
@@ -535,7 +542,7 @@ typedef DargHandleCallback<T> = void Function(T details, TextPosition position);
 
 /// This widget represents a single draggable text selection handle.
 class _TextSelectionHandleOverlay extends StatefulWidget {
-  const _TextSelectionHandleOverlay({
+  _TextSelectionHandleOverlay({
     required this.selection,
     required this.position,
     required this.startHandleLayerLink,
@@ -548,7 +555,7 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
     required this.onHandleDragUpdate,
     required this.onHandleDragEnd,
     this.dragStartBehavior = DragStartBehavior.start,
-  });
+  }) : _visibility = _visibilityFor(position, renderObject);
 
   final TextSelection selection;
   final _TextSelectionHandlePosition position;
@@ -562,12 +569,16 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
   final VoidCallback? onSelectionHandleTapped;
   final TextSelectionControls selectionControls;
   final DragStartBehavior dragStartBehavior;
+  final ValueListenable<bool> _visibility;
 
   @override
   _TextSelectionHandleOverlayState createState() =>
       _TextSelectionHandleOverlayState();
 
-  ValueListenable<bool> get _visibility {
+  static ValueListenable<bool> _visibilityFor(
+    _TextSelectionHandlePosition position,
+    RenderEditor renderObject,
+  ) {
     // 简化逻辑：让handles在选择的任一端可见时就显示
     // 这样可以确保交叉选择时handles不会消失
     switch (position) {
@@ -583,8 +594,6 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
           renderObject.selectionStartInViewport,
           renderObject.selectionEndInViewport,
         );
-      default:
-        throw ArgumentError('Invalid position');
     }
   }
 }
@@ -611,6 +620,9 @@ class _TextSelectionHandleOverlayState
   }
 
   void _handleVisibilityChanged() {
+    if (!mounted) {
+      return;
+    }
     if (widget._visibility.value) {
       _controller.forward();
     } else {
@@ -622,6 +634,9 @@ class _TextSelectionHandleOverlayState
   void didUpdateWidget(_TextSelectionHandleOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     oldWidget._visibility.removeListener(_handleVisibilityChanged);
+    if (oldWidget._visibility is _CombinedVisibility) {
+      (oldWidget._visibility as _CombinedVisibility).dispose();
+    }
     _handleVisibilityChanged();
     widget._visibility.addListener(_handleVisibilityChanged);
   }
@@ -685,8 +700,6 @@ class _TextSelectionHandleOverlayState
           extentOffset: position.offset,
         );
         break;
-      default:
-        throw ArgumentError('Invalid widget.position');
     }
 
     // 防止在拖拽过程中创建collapsed selection，但允许短暂的重叠

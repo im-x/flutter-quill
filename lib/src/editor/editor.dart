@@ -1366,8 +1366,8 @@ class RenderEditor extends RenderEditableContainerBox
       _paintFloatingCursor(context, offset);
     }
     defaultPaint(context, offset);
-    _updateSelectionExtentsVisibility(offset + _paintOffset);
-    _paintHandleLayers(context, getEndpointsForSelection(selection));
+    _updateSelectionExtentsVisibility(offset);
+    _paintHandleLayers(context, getEndpointsForSelection(selection), offset);
 
     if (_hasFocus &&
         _cursorController.show.value &&
@@ -1382,14 +1382,20 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   void _paintHandleLayers(
-      PaintingContext context, List<TextSelectionPoint> endpoints) {
+    PaintingContext context,
+    List<TextSelectionPoint> endpoints,
+    Offset offset,
+  ) {
     var startPoint = endpoints[0].point;
     startPoint = Offset(
       startPoint.dx.clamp(0.0, size.width),
       startPoint.dy.clamp(0.0, size.height),
     );
     context.pushLayer(
-      LeaderLayer(link: _startHandleLayerLink, offset: startPoint),
+      LeaderLayer(
+        link: _startHandleLayerLink,
+        offset: startPoint + offset,
+      ),
       super.paint,
       Offset.zero,
     );
@@ -1400,7 +1406,10 @@ class RenderEditor extends RenderEditableContainerBox
         endPoint.dy.clamp(0.0, size.height),
       );
       context.pushLayer(
-        LeaderLayer(link: _endHandleLayerLink, offset: endPoint),
+        LeaderLayer(
+          link: _endHandleLayerLink,
+          offset: endPoint + offset,
+        ),
         super.paint,
         Offset.zero,
       );

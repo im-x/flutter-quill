@@ -56,6 +56,9 @@ const List<String> romanNumbers = [
   'I'
 ];
 
+const String _imxMarkdownBlockquoteDepthAttribute =
+    'imx_markdown_blockquote_depth';
+
 class EditableTextBlock extends StatelessWidget {
   const EditableTextBlock({
     required this.block,
@@ -116,15 +119,15 @@ class EditableTextBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     assert(debugCheckHasMediaQuery(context));
 
-    final defaultStyles = QuillStyles.getStyles(context, false);
+    final defaultStyles = styles ?? QuillStyles.getStyles(context, false);
     return _EditableBlock(
       block: block,
       textDirection: textDirection,
       horizontalSpacing: horizontalSpacing,
       verticalSpacing: verticalSpacing,
       scrollBottomInset: scrollBottomInset,
-      decoration:
-          _getDecorationForBlock(block, defaultStyles) ?? const BoxDecoration(),
+      decoration: _getDecorationForBlock(context, block, defaultStyles) ??
+          const BoxDecoration(),
       contentPadding: contentPadding,
       children: _buildChildren(
         context,
@@ -134,25 +137,101 @@ class EditableTextBlock extends StatelessWidget {
     );
   }
 
-  BoxDecoration? _getDecorationForBlock(
-      Block node, DefaultStyles? defaultStyles) {
-    final attrs = block.style.attributes;
+  Decoration? _getDecorationForBlock(
+    BuildContext context,
+    Block node,
+    DefaultStyles? defaultStyles,
+  ) {
+    final attrs = node.style.attributes;
     if (attrs.containsKey(Attribute.blockQuote.key)) {
+      final baseDecoration = defaultStyles!.quote!.decoration;
+      if (baseDecoration == null) {
+        return null;
+      }
+      final depth = _blockquoteDepth(attrs);
+      if (depth <= 1) {
+        return baseDecoration;
+      }
+      final quoteStep = _blockquoteStepForDepth(
+        context,
+        node,
+        defaultStyles,
+        depth,
+        baseDecoration,
+      );
       // Verify if the direction is RTL and avoid passing the decoration
       // to the left when need to be on right side
       if (textDirection == TextDirection.rtl) {
-        return defaultStyles!.quote!.decoration?.copyWith(
+        final rtlDecoration = baseDecoration.copyWith(
           border: Border(
             right: BorderSide(width: 4, color: Colors.grey.shade300),
           ),
         );
+        return NestedBlockQuoteDecoration(
+          baseDecoration: rtlDecoration,
+          depth: depth,
+          step: quoteStep,
+          textDirection: textDirection,
+        );
       }
-      return defaultStyles!.quote!.decoration;
+      return NestedBlockQuoteDecoration(
+        baseDecoration: baseDecoration,
+        depth: depth,
+        step: quoteStep,
+        textDirection: textDirection,
+      );
     }
     if (attrs.containsKey(Attribute.codeBlock.key)) {
       return defaultStyles!.code!.decoration;
     }
     return null;
+  }
+
+  int _blockquoteDepth(Map<String, Attribute> attrs) {
+    final imxDepth = attrs[_imxMarkdownBlockquoteDepthAttribute]?.value;
+    if (imxDepth is int && imxDepth > 0) {
+      return imxDepth;
+    }
+    if (attrs.containsKey(Attribute.list.key)) {
+      return 1;
+    }
+    final indent = attrs[Attribute.indent.key]?.value;
+    if (indent is int && indent > 0) {
+      return indent + 1;
+    }
+    return 1;
+  }
+
+  double _blockquoteStepFromDecoration(BoxDecoration decoration) {
+    final border = decoration.border;
+    if (border is Border) {
+      final side =
+          textDirection == TextDirection.rtl ? border.right : border.left;
+      if (side.width > 0) {
+        return side.width;
+      }
+    }
+    return 0;
+  }
+
+  double _blockquoteStepForDepth(
+    BuildContext context,
+    Block node,
+    DefaultStyles defaultStyles,
+    int depth,
+    BoxDecoration fallbackDecoration,
+  ) {
+    final listStyle = defaultStyles.lists;
+    final quoteSpacing = listStyle?.indentWidthBuilder(
+      node,
+      context,
+      node.children.length,
+      listStyle.numberPointWidthBuilder,
+    );
+    if (quoteSpacing != null && quoteSpacing.left > 0) {
+      return quoteSpacing.left / depth;
+    }
+    return _blockquoteStepFromDecoration(fallbackDecoration);
   }
 
   List<Widget> _buildChildren(BuildContext context,
@@ -406,6 +485,96 @@ class EditableTextBlock extends StatelessWidget {
     }
 
     return VerticalSpacing(top, bottom);
+  }
+}
+
+class NestedBlockQuoteDecoration extends Decoration {
+  const NestedBlockQuoteDecoration({
+    required this.baseDecoration,
+    required this.depth,
+    required this.step,
+    required this.textDirection,
+  });
+
+  final BoxDecoration baseDecoration;
+  final int depth;
+  final double step;
+  final TextDirection textDirection;
+
+  @override
+  EdgeInsetsGeometry get padding => baseDecoration.padding;
+
+  @override
+  bool get isComplex => baseDecoration.isComplex || depth > 1;
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+    return _NestedBlockQuoteDecorationPainter(this, onChanged);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NestedBlockQuoteDecoration &&
+        other.baseDecoration == baseDecoration &&
+        other.depth == depth &&
+        other.step == step &&
+        other.textDirection == textDirection;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(baseDecoration, depth, step, textDirection);
+  }
+}
+
+class _NestedBlockQuoteDecorationPainter extends BoxPainter {
+  _NestedBlockQuoteDecorationPainter(
+    this.decoration,
+    VoidCallback? onChanged,
+  )   : _basePainter = decoration.baseDecoration.createBoxPainter(onChanged),
+        super(onChanged);
+
+  final NestedBlockQuoteDecoration decoration;
+  final BoxPainter _basePainter;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    _basePainter.paint(canvas, offset, configuration);
+
+    final size = configuration.size;
+    if (size == null || decoration.depth <= 1 || decoration.step <= 0) {
+      return;
+    }
+
+    final border = decoration.baseDecoration.border;
+    if (border is! Border) {
+      return;
+    }
+
+    final side = decoration.textDirection == TextDirection.rtl
+        ? border.right
+        : border.left;
+    if (side.style == BorderStyle.none || side.width <= 0) {
+      return;
+    }
+
+    final paint = side.toPaint();
+    for (var level = 1; level < decoration.depth; level++) {
+      final dx = decoration.textDirection == TextDirection.rtl
+          ? offset.dx + size.width - decoration.step * level - side.width / 2
+          : offset.dx + decoration.step * level + side.width / 2;
+      canvas.drawLine(
+        Offset(dx, offset.dy),
+        Offset(dx, offset.dy + size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _basePainter.dispose();
+    super.dispose();
   }
 }
 

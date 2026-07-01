@@ -462,6 +462,9 @@ class QuillRawEditorState extends EditorState
                   : SystemMouseCursors.text,
               child: QuillRawEditorMultiChildRenderObject(
                 key: _editorKey,
+                offset: _scrollController.hasClients
+                    ? _scrollController.position
+                    : null,
                 document: doc,
                 selection: controller.selection,
                 hasFocus: _hasFocus,
@@ -982,18 +985,28 @@ class QuillRawEditorState extends EditorState
     // List finished when there is node without Attribute.ol in styles
     // So in this case we set clearIndents=true and send it
     // to the next EditableTextBlock
-    var prevNodeOl = false;
+    var hasActiveOrderedList = false;
     var clearIndents = false;
 
     for (final node in doc.root.children) {
       final attrs = node.style.attributes;
+      final listAttribute = attrs[Attribute.list.key];
+      final indentAttribute = attrs[Attribute.indent.key];
+      final indent = indentAttribute?.value;
+      final isList = listAttribute != null;
+      final isNestedList = isList && indent is int && indent > 0;
 
-      if (prevNodeOl && attrs[Attribute.list.key] != Attribute.ol ||
-          attrs.isEmpty) {
+      if (hasActiveOrderedList &&
+          (!isList || (listAttribute != Attribute.ol && !isNestedList))) {
         clearIndents = true;
       }
 
-      prevNodeOl = attrs[Attribute.list.key] == Attribute.ol;
+      if (listAttribute == Attribute.ol ||
+          (hasActiveOrderedList && isNestedList)) {
+        hasActiveOrderedList = true;
+      } else if (!isNestedList) {
+        hasActiveOrderedList = false;
+      }
       final nodeTextDirection = getDirectionOfNode(node, _textDirection);
       if (node is Line) {
         final editableTextLine = _getEditableTextLineFromNode(node, context);
@@ -1351,6 +1364,9 @@ class QuillRawEditorState extends EditorState
   }
 
   void _updateSelectionOverlayForScroll() {
+    if (_scrollController.hasClients && _editorKey.currentContext != null) {
+      renderEditor.offset = _scrollController.position;
+    }
     _selectionOverlay?.updateForScroll();
   }
 

@@ -3,6 +3,8 @@ import 'dart:convert' show jsonDecode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/quill_delta.dart';
+import 'package:flutter_quill/src/editor/widgets/text/text_block.dart';
 import 'package:flutter_quill/translations.dart';
 import 'package:flutter_quill_test/flutter_quill_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -216,5 +218,77 @@ void main() {
         );
       },
     );
+
+    testWidgets('nested blockquote uses depth-aware decoration',
+        (tester) async {
+      final document = Document.fromDelta(
+        Delta()
+          ..insert('outer')
+          ..insert('\n', {Attribute.blockQuote.key: true})
+          ..insert('inner')
+          ..insert('\n', {
+            Attribute.blockQuote.key: true,
+            Attribute.indent.key: 1,
+          }),
+      );
+      controller.dispose();
+      controller = QuillController(
+        document: document,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              final styles = DefaultStyles.getInstance(context).merge(
+                DefaultStyles(
+                  lists: DefaultListBlockStyle(
+                    const TextStyle(color: Colors.black, fontSize: 16),
+                    HorizontalSpacing.zero,
+                    VerticalSpacing.zero,
+                    VerticalSpacing.zero,
+                    null,
+                    null,
+                    indentWidthBuilder: (
+                      block,
+                      context,
+                      count,
+                      numberPointWidthDelegate,
+                    ) {
+                      final indent =
+                          block.style.attributes[Attribute.indent.key]?.value;
+                      final depth = indent is int ? indent + 1 : 1;
+                      return HorizontalSpacing(16.0 * depth, 0);
+                    },
+                  ),
+                ),
+              );
+              return QuillEditor.basic(
+                controller: controller,
+                configurations: QuillEditorConfigurations(
+                  customStyles: styles,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      final quoteBlocks = tester.allRenderObjects
+          .whereType<RenderEditableTextBlock>()
+          .where((block) => block.decoration is BoxDecoration)
+          .toList();
+
+      expect(quoteBlocks, hasLength(1));
+      final nestedDecorations = tester.allRenderObjects
+          .whereType<RenderEditableTextBlock>()
+          .map((block) => block.decoration)
+          .whereType<NestedBlockQuoteDecoration>()
+          .toList();
+
+      expect(nestedDecorations, hasLength(1));
+      expect(nestedDecorations.single.step, 16);
+    });
   });
 }

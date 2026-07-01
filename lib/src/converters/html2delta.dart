@@ -72,6 +72,8 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       return delta;
     }
 
+    _replaceUnsupportedElements(body);
+
     final nodes = body.nodes..removeWhere(isEmptyNode);
     for (final htmlNode in nodes) {
       delta = _parseNode(
@@ -85,6 +87,23 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
     }
 
     return delta;
+  }
+
+  void _replaceUnsupportedElements(dom.Element root) {
+    final allowedTags = <String>{
+      ..._kSupportedHTMLElements.keys,
+      'ul',
+      'ol',
+      'br',
+    };
+
+    final elements = root.querySelectorAll('*').toList();
+    for (final element in elements) {
+      final name = element.localName ?? '';
+      if (!allowedTags.contains(name) && element.parent != null) {
+        element.replaceWith(dom.Text(element.outerHtml));
+      }
+    }
   }
 
   bool _checkNeedNewLine(Delta delta) {
@@ -188,6 +207,11 @@ class Html2DeltaDecoder extends Converter<String, Delta> {
       } else if (elementName == 'br') {
         return delta..insert('\n');
       } else if (_kSupportedHTMLElements[elementName] == null) {
+        _insertText(
+          delta: delta,
+          text: element.outerHtml,
+          attributes: parentAttributes,
+        );
         return delta;
       } else {
         delta = _parseElement(
